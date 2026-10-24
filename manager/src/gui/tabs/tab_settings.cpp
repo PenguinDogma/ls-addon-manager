@@ -93,28 +93,28 @@ void RenderTabSettings(AddonManager* manager) {
     ImGui::Dummy(ImVec2(0, S(4)));
 
     // ---- Backup and restore
-    eam::ui::SectionLabel("Backup and restore (save and load your settings)");
+    eam::ui::SectionLabel("备份与还原（保存和载入你的设置）");
     ImGui::Dummy(ImVec2(0, S(2)));
     ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyle().Colors[ImGuiCol_TextDisabled]);
-    ImGui::TextWrapped("Save the settings of this manager and of every addon into one file, and load them back later or on another PC. The addons' own saved looks are kept in the same file.");
+    ImGui::TextWrapped("把本管理器和所有插件的设置保存到一个文件，之后可以载入回来，也可用于其他电脑。插件各自保存的外观同样包含在该文件中。");
     ImGui::PopStyleColor();
     ImGui::Dummy(ImVec2(0, S(4)));
-    if (eam::ui::Button("Save settings to a file", eam::ui::icons::kSave, eam::ui::ButtonKind::Primary)) {
+    if (eam::ui::Button("保存设置到文件", eam::ui::icons::kSave, eam::ui::ButtonKind::Primary)) {
         std::wstring path;
         SYSTEMTIME t; GetLocalTime(&t);
         wchar_t name[64]; swprintf(name, 64, L"LSAddonManager-settings-%04d%02d%02d.json", t.wYear, t.wMonth, t.wDay);
-        if (widgets::PickSaveFile(L"Save settings", name, L"Settings backup", L"*.json", path)) {
+        if (widgets::PickSaveFile(L"保存设置", name, L"设置备份", L"*.json", path)) {
             std::ofstream out(fs::path(path), std::ios::binary);
             out << MakeSettingsBackupText(config.Snapshot(), EAM_VERSION_STRING);
             out.close();
-            widgets::ToastShow(out ? "Settings saved." : "Could not write that file.", out ? widgets::ToastType::Success : widgets::ToastType::Error);
+            widgets::ToastShow(out ? "设置已保存。" : "无法写入该文件。", out ? widgets::ToastType::Success : widgets::ToastType::Error);
         }
     }
-    widgets::Tip("Saves the settings of every addon and of this manager into one file, to keep or to move to another PC.");
+    widgets::Tip("把所有插件和本管理器的设置保存到一个文件，可留作备份或迁移到其他电脑。");
     ImGui::SameLine();
-    if (eam::ui::Button("Load settings from a file", eam::ui::icons::kDownload)) {
+    if (eam::ui::Button("从文件载入设置", eam::ui::icons::kDownload)) {
         std::wstring path;
-        if (widgets::PickOpenFile(L"Load settings", L"Settings backup", L"*.json", path)) {
+        if (widgets::PickOpenFile(L"载入设置", L"设置备份", L"*.json", path)) {
             std::ifstream in(fs::path(path), std::ios::binary);
             std::stringstream ss; ss << in.rdbuf();
             const std::string text = ss.str();
@@ -123,53 +123,53 @@ void RenderTabSettings(AddonManager* manager) {
             else { s_importPath = path; s_importText = text; s_importAddons = p.addonCount; s_askImport = true; }
         }
     }
-    widgets::Tip("Replaces the current settings with the ones in a file saved earlier. You are asked first, and your current settings are kept aside. Takes effect after Lossless Scaling restarts.");
+    widgets::Tip("用之前保存的文件中的设置替换当前设置。会先询问你，且当前的设置会另行保留。重启 Lossless Scaling 后生效。");
     if (config.RestartPending()) {
         ImGui::PushStyleColor(ImGuiCol_Text, eam::ui::theme::V(eam::ui::theme::kWarn));
-        ImGui::TextWrapped("Settings were loaded from a file. Restart Lossless Scaling to use them. Until then, changes you make here or in an addon are not saved, so they cannot undo the loaded settings.");
+        ImGui::TextWrapped("已从文件载入设置。重启 Lossless Scaling 后即可使用。在那之前，你在此处或插件中所做的更改都不会保存，因此不会覆盖已载入的设置。");
         ImGui::PopStyleColor();
     }
-    if (s_askImport) { ImGui::OpenPopup("Load settings"); s_askImport = false; }
-    if (ImGui::BeginPopupModal("Load settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+    if (s_askImport) { ImGui::OpenPopup("载入设置"); s_askImport = false; }
+    if (ImGui::BeginPopupModal("载入设置", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::PushTextWrapPos(ImGui::GetFontSize() * 32.0f);
-        ImGui::TextWrapped("Replace your settings with the ones in this file?");
+        ImGui::TextWrapped("用此文件中的设置替换你当前的设置？");
         ImGui::TextDisabled("%s", Utf8(fs::path(s_importPath).filename().wstring()).c_str());
         ImGui::Dummy(ImVec2(0, S(4)));
-        ImGui::TextWrapped("It holds the settings of %d addon%s. Your current settings are saved next to the config first, and the new ones apply after Lossless Scaling restarts.",
-                           s_importAddons, s_importAddons == 1 ? "" : "s");
+        ImGui::TextWrapped("它保存着 %d 个插件%s的设置。你当前的设置会先备份到配置文件旁，新设置在重启 Lossless Scaling 后生效。",
+                           s_importAddons, s_importAddons == 1 ? "" : "");
         ImGui::PopTextWrapPos();
         ImGui::Dummy(ImVec2(0, S(6)));
-        if (eam::ui::Button("Load", eam::ui::icons::kCheck, eam::ui::ButtonKind::Primary)) {
+        if (eam::ui::Button("载入", eam::ui::icons::kCheck, eam::ui::ButtonKind::Primary)) {
             const ImportResult r = ImportSettings(s_importText, config.Snapshot(), fs::path(ExeDir()) / L"backups", [&](const nlohmann::json& j) { config.Replace(j, /*untilRestart=*/true); });
             widgets::ToastShow(r.message, r.ok ? widgets::ToastType::Success : widgets::ToastType::Error, 9.0f);
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();
-        if (eam::ui::Button("Cancel", eam::ui::icons::kClose)) ImGui::CloseCurrentPopup();
+        if (eam::ui::Button("取消", eam::ui::icons::kClose)) ImGui::CloseCurrentPopup();
         ImGui::EndPopup();
     }
 
     // ---- Interface
     ImGui::Dummy(ImVec2(0, S(16)));
-    eam::ui::SectionLabel("Interface");
+    eam::ui::SectionLabel("界面");
     ImGui::Dummy(ImVec2(0, S(2)));
     {
         int pct = config.GlobalGetOr<int>("ui", "scale_percent", 100);
         const int def = 100;
         ImGui::SetNextItemWidth(S(320));
-        if (eam::ui::SliderInt("Interface size", &pct, 75, 200, "%d%%", 0, &def)) {
+        if (eam::ui::SliderInt("界面大小", &pct, 75, 200, "%d%%", 0, &def)) {
             config.GlobalSet("ui", "scale_percent", pct);
             config.Save();
             GuiManager::RequestUserScale();   // applied at the start of the next frame
         }
-        widgets::Tip("Makes everything in this window smaller or larger, on top of Windows' own display scaling. 100% is the size Windows asks for.");
+        widgets::Tip("在 Windows 自身的显示缩放之上，放大或缩小此窗口中的所有内容。100% 即 Windows 要求的大小。");
     }
     bool openOnStart = config.GlobalGetOr<bool>("ui", "open_on_start", true);
-    if (ImGui::Checkbox("Open this window when Lossless Scaling starts", &openOnStart)) { config.GlobalSet("ui", "open_on_start", openOnStart); config.Save(); }
-    widgets::Tip("Off = the manager starts hidden in the notification area (tray). Your addons load and run either way. Closing this window with the X only hides it.");
+    if (ImGui::Checkbox("Lossless Scaling 启动时打开此窗口", &openOnStart)) { config.GlobalSet("ui", "open_on_start", openOnStart); config.Save(); }
+    widgets::Tip("关闭时，管理器会隐藏在通知区域（托盘）中启动。无论开关与否，插件都会照常加载运行。用 X 关闭此窗口也只是将其隐藏。");
     bool hotkeyOn = config.GlobalGetOr<bool>("ui", "hotkey_enabled", true);
-    if (ImGui::Checkbox("Open / close hotkey: Ctrl+Shift +", &hotkeyOn)) { config.GlobalSet("ui", "hotkey_enabled", hotkeyOn); config.Save(); GuiManager::ApplyHotkey(); }
-    widgets::Tip("Works anywhere in Windows, including while a game has focus. If another program already uses the combination, the note below says so; pick another key.");
+    if (ImGui::Checkbox("打开/关闭快捷键：Ctrl+Shift +", &hotkeyOn)) { config.GlobalSet("ui", "hotkey_enabled", hotkeyOn); config.Save(); GuiManager::ApplyHotkey(); }
+    widgets::Tip("在 Windows 中任何地方都有效，包括游戏占用焦点时。如果其他程序已占用该组合键，下方状态会提示，换一个按键即可。");
     ImGui::SameLine();
     {
         int idx = config.GlobalGetOr<int>("ui", "hotkey_vk", VK_F12) - VK_F1;
@@ -179,49 +179,49 @@ void RenderTabSettings(AddonManager* manager) {
         ImGui::SetNextItemWidth(ImGui::CalcTextSize("F12").x + st.FramePadding.x * 2.0f + ImGui::GetFrameHeight() + st.ItemInnerSpacing.x);
         if (ImGui::Combo("##mgrhotkey", &idx, names, 12)) { config.GlobalSet("ui", "hotkey_vk", VK_F1 + idx); config.Save(); GuiManager::ApplyHotkey(); }
     }
-    ImGui::TextDisabled("Hotkey: %s", GuiManager::HotkeyStatus());
+    ImGui::TextDisabled("快捷键：%s", GuiManager::HotkeyStatus());
 
     // ---- Addons
     ImGui::Dummy(ImVec2(0, S(16)));
-    eam::ui::SectionLabel("Addons");
+    eam::ui::SectionLabel("插件");
     ImGui::Dummy(ImVec2(0, S(2)));
     {
         int securityLevel = config.GlobalGetOr<int>(nullptr, "security_level", 0);
-        const char* securityItems[] = { "Allow all addons", "Warn about untrusted addons", "Block untrusted addons" };
+        const char* securityItems[] = { "允许所有插件", "对不受信的插件给出警告", "阻止不受信的插件" };
         ImGui::SetNextItemWidth(S(320));
-        if (ImGui::Combo("Security", &securityLevel, securityItems, 3)) {
+        if (ImGui::Combo("安全性", &securityLevel, securityItems, 3)) {
             config.GlobalSet(nullptr, "security_level", securityLevel); config.Save();
-            widgets::ToastShow("Applies the next time an addon is loaded", widgets::ToastType::Info);
+            widgets::ToastShow("在下次加载插件时生效", widgets::ToastType::Info);
         }
-        widgets::Tip("What to do with an addon whose DLL is not on the trusted list (addons\\trusted_addons.json): allow it, log a warning, or refuse to load it. With no such file, blocking refuses every addon.");
+        widgets::Tip("如何处理 DLL 不在受信列表（addons\\trusted_addons.json）中的插件：允许、记录警告或拒绝加载。若该文件不存在，选择“阻止”会拒绝所有插件。");
     }
     bool autoLoad = config.GlobalGetOr<bool>(nullptr, "auto_load", true);
-    if (ImGui::Checkbox("Load enabled addons when Lossless Scaling starts", &autoLoad)) { config.GlobalSet(nullptr, "auto_load", autoLoad); config.Save(); }
-    widgets::Tip("Off = start with nothing loaded, then press Load now on the addon you want.");
+    if (ImGui::Checkbox("Lossless Scaling 启动时加载已启用的插件", &autoLoad)) { config.GlobalSet(nullptr, "auto_load", autoLoad); config.Save(); }
+    widgets::Tip("关闭时不加载任何插件，需要时在目标插件上按“立即加载”即可。");
 
     // ---- Updates
     ImGui::Dummy(ImVec2(0, S(16)));
-    eam::ui::SectionLabel("Updates");
+    eam::ui::SectionLabel("更新");
     ImGui::Dummy(ImVec2(0, S(2)));
     {
         bool daily = config.GlobalGetOr<bool>("updates", "check", true);
-        if (ImGui::Checkbox("Check for a new version once a day", &daily)) { config.GlobalSet("updates", "check", daily); config.Save(); }
-        widgets::Tip("On by default. Turn it off and the manager never contacts the internet on its own; Check now still works when you press it.");
+        if (ImGui::Checkbox("每天检查一次新版本", &daily)) { config.GlobalSet("updates", "check", daily); config.Save(); }
+        widgets::Tip("默认开启。关闭后，管理器不会再自行联网；“立即检查”按钮仍可随时使用。");
         ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyle().Colors[ImGuiCol_TextDisabled]);
-        ImGui::TextWrapped("Asks github.com for the latest release of this project and compares its version number with yours. That sends your IP address and the "
-                           "program's name and version, like any download. Nothing is downloaded or installed, and this is the only thing the manager ever sends over the internet.");
+        ImGui::TextWrapped("会向 github.com 查询本项目的最新发布版本，并与你当前的版本号比较。和任何下载一样，这会发送你的 IP 地址"
+                           "以及程序名称和版本。不会下载或安装任何内容，这也是管理器唯一会通过互联网发送的信息。");
         ImGui::PopStyleColor();
         ImGui::Dummy(ImVec2(0, S(4)));
         const update::Status st = update::Current();
         const bool checking = st.state == update::State::Checking;
         if (checking) ImGui::BeginDisabled();
-        if (eam::ui::Button(checking ? "Checking..." : "Check now", eam::ui::icons::kCheck)) update::StartCheckAsync();
+        if (eam::ui::Button(checking ? "检查中…" : "立即检查", eam::ui::icons::kCheck)) update::StartCheckAsync();
         if (checking) ImGui::EndDisabled();
-        widgets::Tip("Asks GitHub now, whatever the setting above says.");
+        widgets::Tip("无论上方设置如何，立即向 GitHub 查询。");
         if (st.state == update::State::Available) {
             ImGui::SameLine();
-            if (eam::ui::Button("Open the download page", eam::ui::icons::kExternal, eam::ui::ButtonKind::Primary)) ShellExecuteA(nullptr, "open", st.url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
-            widgets::Tip("Opens this project's release page in your browser. You download and install it yourself.");
+            if (eam::ui::Button("打开下载页面", eam::ui::icons::kExternal, eam::ui::ButtonKind::Primary)) ShellExecuteA(nullptr, "open", st.url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+            widgets::Tip("在浏览器中打开本项目的发布页面，由你自行下载并安装。");
         }
         const std::string line = update::DescribeStatus(st);
         ImGui::PushStyleColor(ImGuiCol_Text, st.state == update::State::Available ? eam::ui::theme::V(eam::ui::theme::kAccent) : (st.state == update::State::Failed ? eam::ui::theme::V(eam::ui::theme::kWarn) : ImGui::GetStyle().Colors[ImGuiCol_TextDisabled]));
@@ -231,30 +231,30 @@ void RenderTabSettings(AddonManager* manager) {
 
     // ---- Logging and support
     ImGui::Dummy(ImVec2(0, S(16)));
-    eam::ui::SectionLabel("Logging and support");
+    eam::ui::SectionLabel("日志与支持");
     ImGui::Dummy(ImVec2(0, S(2)));
     {
         int logLevel = config.GlobalGetOr<int>(nullptr, "log_level", 2);
-        const char* logItems[] = { "Trace", "Debug", "Info", "Warn", "Error" };
+        const char* logItems[] = { "跟踪", "调试", "信息", "警告", "错误" };
         ImGui::SetNextItemWidth(S(320));
-        if (ImGui::Combo("Log detail", &logLevel, logItems, 5)) { config.GlobalSet(nullptr, "log_level", logLevel); config.Save(); Logger::Instance().SetMinLevel(static_cast<LogLevel>(logLevel)); }
-        widgets::Tip("Messages below this level are dropped before they are recorded, in the Logs tab and in LSAddonManager.log. Info is a good default; Debug and Trace are for tracking down a problem.");
+        if (ImGui::Combo("日志详细度", &logLevel, logItems, 5)) { config.GlobalSet(nullptr, "log_level", logLevel); config.Save(); Logger::Instance().SetMinLevel(static_cast<LogLevel>(logLevel)); }
+        widgets::Tip("低于该级别的消息在记录前即被丢弃，包括日志页和 LSAddonManager.log 中的记录。“信息”是合适的默认值；“调试”和“跟踪”用于排查问题。");
     }
-    if (eam::ui::Button("Create a diagnostics file", eam::ui::icons::kPackage, eam::ui::ButtonKind::Primary)) {
+    if (eam::ui::Button("创建诊断文件", eam::ui::icons::kPackage, eam::ui::ButtonKind::Primary)) {
         const DiagResult d = CreateDiagnosticsZip(fs::path(ExeDir()), BuildDiagnosticsSummary(manager), fs::path(DesktopDir()));
         widgets::ToastShow(d.message, d.ok ? widgets::ToastType::Success : widgets::ToastType::Error, 9.0f);
         if (d.ok) ShellExecuteW(nullptr, L"open", L"explorer.exe", (L"/select,\"" + d.zip.wstring() + L"\"").c_str(), nullptr, SW_SHOWNORMAL);
     }
-    widgets::Tip("Puts the logs, the settings and a short summary (versions, GPU, which addons are on) into one zip on your Desktop, for a bug report. Nothing is uploaded: you decide who gets the file.");
+    widgets::Tip("把日志、设置和一份简短摘要（版本、显卡、已启用的插件）打包成一个 zip 放到桌面，用于提交问题报告。不会上传任何内容：文件交给谁由你决定。");
     ImGui::SameLine();
-    if (eam::ui::Button("Logs folder", eam::ui::icons::kFolder)) OpenPath(ExeDir() + L"\\logs");
+    if (eam::ui::Button("日志文件夹", eam::ui::icons::kFolder)) OpenPath(ExeDir() + L"\\logs");
     ImGui::SameLine();
-    if (eam::ui::Button("Addons folder", eam::ui::icons::kFolder)) OpenPath(ExeDir() + L"\\addons");
+    if (eam::ui::Button("插件文件夹", eam::ui::icons::kFolder)) OpenPath(ExeDir() + L"\\addons");
     ImGui::SameLine();
     if (eam::ui::Button("config.json", eam::ui::icons::kFile)) OpenPath(ExeDir() + L"\\addons\\config.json");
 
     ImGui::Dummy(ImVec2(0, S(14)));
-    ImGui::TextDisabled("Changes are saved as you make them.");
+    ImGui::TextDisabled("更改会即时保存。");
 }
 
 } // namespace eam

@@ -51,18 +51,18 @@ ImVec4 ColourFor(LogLevel level) {
 }
 
 void DrawControls() {
-    ImGui::Checkbox("Auto-scroll", &g_followNewest);
-    widgets::Tip("Keep the newest line in view. Scroll up to stop following; scroll back to the bottom to resume.");
+    ImGui::Checkbox("自动滚动", &g_followNewest);
+    widgets::Tip("始终显示最新一行。向上滚动即停止跟随；滚回底部即恢复跟随。");
     ImGui::SameLine();
 
-    static const char* const kLevels[] = { "Trace", "Debug", "Info", "Warn", "Error" };
+    static const char* const kLevels[] = { "跟踪", "调试", "信息", "警告", "错误" };
     ImGui::SetNextItemWidth(S(110));
-    ImGui::Combo("Min Level", &g_minLevel, kLevels, 5);
-    widgets::Tip("Show only messages at or above this level. This only filters the view; what gets recorded is set in Settings > Log Level.");
+    ImGui::Combo("最低级别", &g_minLevel, kLevels, 5);
+    widgets::Tip("只显示该级别及以上的消息。此处仅过滤显示视图；实际记录的内容由“设置 > 日志详细度”决定。");
     ImGui::SameLine();
 
-    if (eam::ui::Button("Clear", eam::ui::icons::kTrash)) Logger::Instance().Clear();
-    widgets::Tip("Empty this list. " EAM_PRODUCT_FILE ".log on disk is not touched.");
+    if (eam::ui::Button("清空", eam::ui::icons::kTrash)) Logger::Instance().Clear();
+    widgets::Tip("清空此列表。磁盘上的 " EAM_PRODUCT_FILE ".log 不受影响。");
     ImGui::Separator();
 }
 
