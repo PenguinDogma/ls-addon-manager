@@ -11,6 +11,7 @@
 #include "eam/widgets.h"
 #include "imgui.h"
 #include <cstdio>
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -42,6 +43,48 @@ void Logo(ImDrawList* dl, ImVec2 at, float size) {
     eam::ui::svg::Draw(dl, eam::ui::icons::kEchoBack, at, size, U(kAccentDim), 1.8f);
     eam::ui::svg::Draw(dl, eam::ui::icons::kEchoMid, at, size, U(kAccent), 1.8f);
     eam::ui::svg::Draw(dl, eam::ui::icons::kEchoFront, at, size, U(kAccentHot), 1.8f, U(kAccent));
+}
+
+// The scaling cheat-sheet behind the header bar's ? button: one row per scheme Lossless Scaling offers,
+// in its own list's order. A **span** in a cell's text is drawn in the accent colour (see CheatCell).
+constexpr const char* kScalingHelpPopup = "LS 缩放方案速查###ls_scaling_help";
+struct ScalingRow { const char* scheme; const char* what; const char* suits; };
+const ScalingRow kScalingRows[] = {
+    { "NIS",               "NVIDIA 图像缩放：空间上采样 + 锐化",   "3D 游戏压分辨率后放大；**插件链路的唯一入口**" },
+    { "FSR 1",             "同类空间上采样（AMD 版）+ 锐化",      "不开插件时给 3D 游戏放大，与 NIS 按口味二选一" },
+    { "Nearest（最邻近）",  "一像素对一像素硬放大，零模糊",        "像素画游戏，且缩放比正好整数倍（1080p 到 2160p）" },
+    { "Sharp Bilinear",    "先整数倍最邻近，再双线性补零头",      "像素画但缩放比非整数（1080p 到 1440p）" },
+    { "Bilinear",          "双线性平滑，无锐化",                  "视频、已抗锯齿好的画面" },
+    { "Anime4K",           "面向动画的卷积网络恢复 + 放大",        "动漫风 2D 游戏、动画视频" },
+    { "Auto",              "Lossless Scaling 自动判断内容挑算法", "懒人默认；要精确控制就手动选" },
+};
+
+// A cheat-sheet cell whose text may carry a **span**: the span is drawn in the accent colour.
+void CheatCell(const char* text) {
+    const char* star = strstr(text, "**");
+    if (!star) { ImGui::TextUnformatted(text); return; }
+    const char* end = strstr(star + 2, "**");
+    ImGui::TextUnformatted(text, star);
+    ImGui::SameLine(0.0f, 0.0f);
+    ImGui::PushStyleColor(ImGuiCol_Text, V(kAccent));
+    ImGui::TextUnformatted(star + 2, end ? end : star + strlen(star));
+    ImGui::PopStyleColor();
+    if (end) {
+        ImGui::SameLine(0.0f, 0.0f);
+        ImGui::TextUnformatted(end + 2);
+    }
+}
+
+// A warning line: the kAlert mark, then the text in the theme's amber. Wraps at the caller's wrap position.
+void WarnLine(const char* text) {
+    const float ico = ImGui::GetTextLineHeight();
+    const ImVec2 p = ImGui::GetCursorScreenPos();
+    eam::ui::svg::Draw(ImGui::GetWindowDrawList(), eam::ui::icons::kAlert, p, ico, U(kWarn), 2.0f);
+    ImGui::Dummy(ImVec2(ico + ImGui::GetStyle().ItemInnerSpacing.x, ico));
+    ImGui::SameLine(0.0f, 0.0f);
+    ImGui::PushStyleColor(ImGuiCol_Text, V(kWarn));
+    ImGui::TextUnformatted(text);
+    ImGui::PopStyleColor();
 }
 
 } // namespace
@@ -128,6 +171,23 @@ void HeaderBar() {
         if (i > 0) dl->AddLine(ImVec2(right + gap * 0.5f, top + S(2)), ImVec2(right + gap * 0.5f, top + captionSize + valueSize), U(kBorderBright), 1.0f);
     }
 
+    {   // the scaling cheat-sheet: a small ? after the readouts (the band lays its right side out right to left, so after them means to their left)
+        const float bs = S(26);
+        const ImVec2 bp(readoutLeft - S(16) - bs, origin.y + (height - bs) * 0.5f - S(2));
+        if (bp.x >= leftEnd + S(12)) {   // a narrow window: no button rather than one over the title or the update badge
+            const ImVec2 saved = ImGui::GetCursorScreenPos();
+            ImGui::SetCursorScreenPos(bp);
+            const bool clicked = ImGui::InvisibleButton("##scaling_help", ImVec2(bs, bs));
+            const bool hovered = ImGui::IsItemHovered();
+            ImGui::SetCursorScreenPos(saved);
+            if (hovered) dl->AddRectFilled(bp, ImVec2(bp.x + bs, bp.y + bs), U(kRowHover), S(3.0f));
+            const ImVec2 qs = ImGui::CalcTextSize("?");
+            dl->AddText(ImVec2(bp.x + (bs - qs.x) * 0.5f, bp.y + (bs - qs.y) * 0.5f), U(hovered ? kAccent : kMuted), "?");
+            if (hovered) Tip("打开 LS 缩放方案速查：每种缩放方案是干什么的、适合什么。");
+            if (clicked) ImGui::OpenPopup(kScalingHelpPopup);
+        }
+    }
+
     // the line under the band
     dl->AddLine(ImVec2(origin.x, origin.y + height - 1), ImVec2(origin.x + width, origin.y + height - 1), U(kBorder), 1.0f);
     ImGui::Dummy(ImVec2(width, height));
@@ -150,6 +210,45 @@ void HeaderBar() {
         }
         tip += "\n\n历史记录及其含义见“性能”页。";
         Tip(tip.c_str());
+    }
+
+    // the LS scaling cheat-sheet, opened by the ? in the header bar
+    if (ImGui::BeginPopupModal(kScalingHelpPopup, nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings)) {
+        const float fs = ImGui::GetFontSize();
+        ImGui::PushTextWrapPos(fs * 30.0f);
+        WarnLine("插件联动：DLSS 5 / 上采样插件只接管 NIS 的输出——插件开着时选了其他缩放类型，插件不会生效！这是“插件怎么没反应”的头号原因。");
+        ImGui::Dummy(ImVec2(0, S(4)));
+        WarnLine("像素画 / 2D 游戏别配神经渲染（NR）：平涂画面没有细节可恢复，只会换来闪烁和额外功耗。");
+        ImGui::PopTextWrapPos();
+        ImGui::Dummy(ImVec2(0, S(6)));
+
+        if (ImGui::BeginTable("##scaling_schemes", 3, ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_SizingFixedFit)) {
+            const float colScheme = fs * 9.2f, colWhat = fs * 11.6f, colSuits = fs * 12.8f;
+            ImGui::TableSetupColumn("方案", ImGuiTableColumnFlags_WidthFixed, colScheme);
+            ImGui::TableSetupColumn("是干什么的", ImGuiTableColumnFlags_WidthFixed, colWhat);
+            ImGui::TableSetupColumn("适合什么", ImGuiTableColumnFlags_WidthFixed, colSuits);
+            ImGui::TableHeadersRow();
+            const float pad2 = ImGui::GetStyle().CellPadding.x * 2.0f;
+            auto cell = [&](float w, const char* text) {   // wrapped within its fixed column, like the warnings in theirs
+                ImGui::PushTextWrapPos(ImGui::GetCursorScreenPos().x + w - pad2);
+                CheatCell(text);
+                ImGui::PopTextWrapPos();
+            };
+            for (const ScalingRow& r : kScalingRows) {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                cell(colScheme, r.scheme);
+                ImGui::TableNextColumn();
+                cell(colWhat, r.what);
+                ImGui::TableNextColumn();
+                cell(colSuits, r.suits);
+            }
+            ImGui::EndTable();
+        }
+
+        ImGui::Dummy(ImVec2(0, S(2)));
+        if (ui::Button("知道了", ui::icons::kCheck, ui::ButtonKind::Primary)) ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
     }
 }
 
