@@ -48,28 +48,28 @@ namespace {
 // --------------------------------------------------------------------------------------------------------------------------------------- words
 
 const wchar_t* const kNoModelNotice =
-    L"DLSS 5 Neural Rendering needs your own copy of nvngx_dlssnr.dll. It is not part of this download, and this project does not download it or say where to get it. "
-    L"Setup can copy your file into the folder afterwards. Everything else works without it.\n"
-    L"Tested with World of Warcraft: Forever, Fallout: New Vegas and Lossless Scaling 3.2.2.0. Unsigned, like everything in this project.";
+    L"DLSS 5 神经渲染需要你自备的 nvngx_dlssnr.dll。它不在这份下载里，本项目既不会下载它，也不会提供获取途径。 "
+    L"安装程序可以在之后把你的文件复制进文件夹。没有它，其余功能照常可用。\n"
+    L"已在 World of Warcraft: Forever、Fallout: New Vegas 和 Lossless Scaling 3.2.2.0 上测试。与本项目所有文件一样，未经签名。";
 
 std::wstring W(const std::string& s) { return Widen(s); }
 
 std::wstring PlanText(Action a) {
     const wchar_t* safety =
-        L"\n\nEverything that gets replaced is first copied to a backups folder inside the Lossless Scaling folder; nothing is deleted. "
-        L"Your settings (addons\\config.json), your other addons and your removed addons are never touched. The new files are checked after copying, "
-        L"and if anything goes wrong the folder is put back exactly as it was.";
+        L"\n\n所有会被替换的文件都先复制到 Lossless Scaling 文件夹内的 backups 备份文件夹；不会删除任何东西。 "
+        L"你的设置（addons\\config.json）、其他插件以及已移除的插件都绝不会被动到。复制完成后会校验新文件， "
+        L"一旦出错，文件夹会恢复原样。";
     switch (a) {
     case Action::Install:
-        return std::wstring(L"Lossless Scaling's own Lossless.dll is kept, renamed Lossless_original.dll (the manager passes everything on to it). "
-                            L"LS Addon Manager's Lossless.dll takes its place, with its two icon files and the addons folder.") + safety;
+        return std::wstring(L"Lossless Scaling 自己的 Lossless.dll 会被保留，改名为 Lossless_original.dll（管理器把一切调用转交给它）。 "
+                            L"LS 插件管理器的 Lossless.dll 取代它的位置，同时装入两个图标文件和 addons 文件夹。") + safety;
     case Action::Update:
-        return std::wstring(L"The earlier LS Addon Manager files are replaced with these; Lossless_original.dll stays as it is.") + safety;
+        return std::wstring(L"先前的 LS 插件管理器文件会被这批文件替换；Lossless_original.dll 保持不变。") + safety;
     case Action::Repair:
-        return std::wstring(L"Lossless Scaling updated itself and put its own Lossless.dll back over LS Addon Manager's. Setup keeps that new one as Lossless_original.dll "
-                            L"and puts LS Addon Manager's Lossless.dll back in.") + safety;
+        return std::wstring(L"Lossless Scaling 自我更新时，用它自己的 Lossless.dll 覆盖了 LS 插件管理器的版本。安装程序会把新文件保留为 Lossless_original.dll， "
+                            L"并重新装回 LS 插件管理器的 Lossless.dll。") + safety;
     case Action::Reinstall:
-        return std::wstring(L"Puts the LS Addon Manager files back as they come in this download.") + safety;
+        return std::wstring(L"把 LS 插件管理器的文件恢复成本次下载中的原始文件。") + safety;
     default: return L"";
     }
 }
@@ -158,7 +158,7 @@ HRESULT CALLBACK DialogProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, LONG_PTR 
 Page& NewPage(App& a, const std::wstring& instruction, const std::wstring& content, bool closeButton = true) {
     a.pages.push_back(std::make_unique<Page>());
     Page& p = *a.pages.back();
-    p.title = L"LS Addon Manager " + (a.payload.ok ? W(a.payload.version) + L" " : std::wstring()) + L"Setup";
+    p.title = L"LS 插件管理器 " + (a.payload.ok ? W(a.payload.version) + L" " : std::wstring()) + L"安装程序";
     p.instruction = instruction;
     p.content = content;
     p.footer = kNoModelNotice;
@@ -184,8 +184,8 @@ void Finish(Page& p, bool withFooter = true) {
     if (p.buttons.empty()) p.cfg.dwFlags &= ~static_cast<TASKDIALOG_FLAGS>(TDF_USE_COMMAND_LINKS);   // the flag without any custom button is E_INVALIDARG
     if (!p.expanded.empty()) {
         p.cfg.pszExpandedInformation = p.expanded.c_str();
-        p.cfg.pszCollapsedControlText = L"Show the details";
-        p.cfg.pszExpandedControlText = L"Hide the details";
+        p.cfg.pszCollapsedControlText = L"显示详情";
+        p.cfg.pszExpandedControlText = L"收起详情";
     }
     if (withFooter) {
         p.cfg.pszFooter = p.footer.c_str();
@@ -198,38 +198,38 @@ void Navigate(HWND hwnd, Page& p) { SendMessageW(hwnd, TDM_NAVIGATE_PAGE, 0, rei
 Page& MainPage(App& a) {
     a.showingProgress = false;
     if (!a.payload.ok) {
-        Page& p = NewPage(a, L"This setup file is damaged.", W(a.payloadError.empty() ? "It carries no files to install." : a.payloadError) +
-                                                            L"\n\nDownload it again from the project's releases page.");
+        Page& p = NewPage(a, L"这份安装程序文件已损坏。", W(a.payloadError.empty() ? "没有可安装的文件。" : a.payloadError) +
+                                                            L"\n\n请从项目的发布页重新下载。");
         Finish(p, false);
         return p;
     }
     std::wstring content = W(a.advice.detail);
     if (!content.empty()) content += L"\n\n";
-    content += L"Lossless Scaling folder:\n" + a.folder;
+    content += L"Lossless Scaling 文件夹：\n" + a.folder;
     if (!a.state.lsVersion.empty()) content += L"\nLossless Scaling " + W(a.state.lsVersion);
     if (!a.note.empty()) { content += L"\n\n" + a.note; a.note.clear(); }
     if (a.advice.blocked) content += L"\n\n" + W(a.advice.blockedReason);
     const bool canChange = a.writable || a.elevated;
-    if (!canChange && a.state.situation != Situation::NotLosslessScaling) content += L"\n\nWindows only lets an administrator change files in that folder.";
+    if (!canChange && a.state.situation != Situation::NotLosslessScaling) content += L"\n\nWindows 只允许管理员修改该文件夹中的文件。";
 
     Page& p = NewPage(a, W(a.advice.headline), content);
     const bool haveAction = a.advice.action != Action::None && !a.advice.blocked;
     if (haveAction && canChange) {
         std::wstring label = W(a.advice.actionLabel);
-        if (a.advice.action == Action::Install) label += L"\nKeeps Lossless Scaling's own file, adds the manager and its addons";
-        else if (a.advice.action == Action::Update) label += L"\nReplaces the earlier version";
-        else if (a.advice.action == Action::Repair) label += L"\nPuts the manager back after the Lossless Scaling update";
-        else if (a.advice.action == Action::Reinstall) label += L"\nPuts its files back as they came (not the ones you changed)";
+        if (a.advice.action == Action::Install) label += L"\n保留 Lossless Scaling 自己的文件，安装管理器及其插件";
+        else if (a.advice.action == Action::Update) label += L"\n替换旧版本";
+        else if (a.advice.action == Action::Repair) label += L"\n在 Lossless Scaling 更新后装回管理器";
+        else if (a.advice.action == Action::Reinstall) label += L"\n恢复为原始文件（不含你修改过的）";
         p.links.push_back({kAction, label});
         p.expanded = PlanText(a.advice.action);
     }
-    if ((haveAction || a.advice.canUninstall) && !canChange) p.links.push_back({kAdmin, L"Restart as administrator\nThis folder can only be changed with administrator rights"});
-    if (a.advice.blocked) p.links.push_back({kRecheck, L"Check again\nAfter closing Lossless Scaling"});
+    if ((haveAction || a.advice.canUninstall) && !canChange) p.links.push_back({kAdmin, L"以管理员身份重启\n此文件夹只能用管理员权限修改"});
+    if (a.advice.blocked) p.links.push_back({kRecheck, L"重新检查\n请先关闭 Lossless Scaling"});
     if (a.advice.canUninstall && canChange && !a.advice.blocked) {
-        p.links.push_back({kUninstall, L"Uninstall\nPuts Lossless Scaling's own Lossless.dll back. Your addons and settings stay."});
-        p.links.push_back({kUninstallAll, L"Uninstall and take the addons out too\nThe addons folder, with your addons' settings, is moved to the backups folder, not deleted."});
+        p.links.push_back({kUninstall, L"卸载\n装回 Lossless Scaling 自己的 Lossless.dll。你的插件和设置保持不变。"});
+        p.links.push_back({kUninstallAll, L"卸载并移除插件\naddons 文件夹连同各插件的设置会移入备份文件夹，不会被删除。"});
     }
-    p.links.push_back({kOther, L"Use a different folder..."});
+    p.links.push_back({kOther, L"使用其他文件夹..."});
     Finish(p);
     return p;
 }
@@ -238,29 +238,29 @@ Page& ChooserPage(App& a, const std::wstring& why) {
     a.showingProgress = false;
     std::wstring content = why;
     if (!content.empty()) content += L"\n\n";
-    content += a.candidates.empty() ? L"Setup did not find Lossless Scaling by itself. Choose its folder: the one that holds LosslessScaling.exe."
-                                    : L"Choose the folder of the Lossless Scaling you want to use. Setup lists what it found; \"Browse\" picks any other folder.";
-    Page& p = NewPage(a, L"Which Lossless Scaling?", content);
+    content += a.candidates.empty() ? L"安装程序未能自行找到 Lossless Scaling。请选择它的文件夹：即包含 LosslessScaling.exe 的那个。"
+                                    : L"请选择你要使用的那个 Lossless Scaling 的文件夹。安装程序列出了找到的结果；点“浏览”可选其他任意文件夹。";
+    Page& p = NewPage(a, L"选择哪个 Lossless Scaling？", content);
     int i = 0;
     for (const auto& c : a.candidates) {
         if (i >= 8) break;
         const State s = Inspect(c.dir);
         std::wstring line = c.dir + L"\n";
-        line += s.installedVersion.empty() ? L"LS Addon Manager is not installed here" : L"LS Addon Manager " + W(s.installedVersion) + L" is installed here";
+        line += s.installedVersion.empty() ? L"此处未安装 LS 插件管理器" : L"此处已安装 " + W(s.installedVersion) + L" 版本的 LS 插件管理器";
         if (!s.lsVersion.empty()) line += L"  |  Lossless Scaling " + W(s.lsVersion);
-        line += L"  |  found: " + W(c.how);
+        line += L"  |  来源：" + W(c.how);
         p.links.push_back({kCandidate0 + i, line});
         ++i;
     }
-    p.links.push_back({kBrowse, L"Browse for the folder..."});
-    if (!a.folder.empty()) p.links.push_back({kBack, L"Back"});
+    p.links.push_back({kBrowse, L"浏览文件夹..."});
+    if (!a.folder.empty()) p.links.push_back({kBack, L"返回"});
     Finish(p);
     return p;
 }
 
 Page& ProgressPage(App& a, const std::wstring& what) {
     a.showingProgress = true;
-    Page& p = NewPage(a, what, L"This takes a few seconds. Please do not switch off the computer.", false);
+    Page& p = NewPage(a, what, L"这只需要几秒钟。请不要关机或断开电源。", false);
     p.progress = true;
     p.cfg.dwFlags |= TDF_SHOW_MARQUEE_PROGRESS_BAR;
     Finish(p, false);
@@ -271,11 +271,11 @@ Page& ProgressPage(App& a, const std::wstring& what) {
 Page& WaitingPage(App& a) {
     a.showingProgress = true;   // the marquee; and the window test does not close it while it waits
     a.waiting = true;
-    Page& p = NewPage(a, L"Close Lossless Scaling to update LS Addon Manager" + (a.payload.ok ? L" to " + W(a.payload.version) : std::wstring()) + L".",
-                      L"Setup is waiting for it. Close Lossless Scaling: its window, or right-click its icon next to the clock and choose Exit.\n\n"
-                      L"Then the update runs by itself, with the usual backups" +
-                      std::wstring(a.restartAfter ? L", and Lossless Scaling starts again." : L".") +
-                      L"\n\nLossless Scaling folder:\n" + a.folder);
+    Page& p = NewPage(a, L"关闭 Lossless Scaling，以更新 LS 插件管理器" + (a.payload.ok ? L"到版本 " + W(a.payload.version) : std::wstring()) + L"。",
+                      L"安装程序正在等待。请关闭 Lossless Scaling：直接关掉它的窗口，或右键点击时钟旁的图标并选择“退出”。\n\n"
+                      L"随后更新会自动进行，并照常创建备份" +
+                      std::wstring(a.restartAfter ? L"，之后 Lossless Scaling 会重新启动。" : L"。") +
+                      L"\n\nLossless Scaling 文件夹：\n" + a.folder);
     p.progress = true;
     p.cfg.dwFlags |= TDF_SHOW_MARQUEE_PROGRESS_BAR;
     Finish(p, false);
@@ -296,22 +296,22 @@ Page& ResultPage(App& a) {
     a.showingProgress = false;
     const Result& r = a.result;
     std::wstring instruction;
-    if (r.ok) instruction = a.resultIsUninstall ? L"Uninstalled." : L"Done.";
-    else instruction = r.rolledBack ? L"It did not work. Nothing was changed." : L"It did not work.";
+    if (r.ok) instruction = a.resultIsUninstall ? L"已卸载。" : L"完成。";
+    else instruction = r.rolledBack ? L"未能完成，未更改任何文件。" : L"未能完成。";
     std::wstring content = W(r.message);
-    if (r.ok && !a.resultIsUninstall) content += a.restarted ? L"\n\nLossless Scaling is starting again; the manager opens with it."
-                                                             : L"\n\nStart Lossless Scaling once; the manager opens by itself.";
+    if (r.ok && !a.resultIsUninstall) content += a.restarted ? L"\n\nLossless Scaling 正在重新启动；管理器会随之打开。"
+                                                             : L"\n\n请启动一次 Lossless Scaling；管理器会自行打开。";
     if (!a.note.empty()) { content += L"\n\n" + a.note; a.note.clear(); }
     Page& p = NewPage(a, instruction, content);
     if (!r.log.empty() || !r.backupDir.empty()) {
         for (const auto& line : r.log) p.expanded += W(line) + L"\n";
-        if (!r.backupDir.empty()) p.expanded += L"\nBackups: " + r.backupDir;
+        if (!r.backupDir.empty()) p.expanded += L"\n备份文件夹：" + r.backupDir;
     }
     if (r.ok && !a.resultIsUninstall && !Exists(JoinPath(a.folder, L"nvngx_dlssnr.dll")))
-        p.links.push_back({kPlaceModel, L"Copy my nvngx_dlssnr.dll into this folder...\nOnly for DLSS 5 Neural Rendering. Choose the file you already have; nothing is downloaded."});
-    p.links.push_back({kOpenFolder, L"Open the Lossless Scaling folder"});
-    if (!r.backupDir.empty()) p.links.push_back({kOpenBackups, L"Open the backups folder\nWhat was replaced or taken out is there"});
-    p.links.push_back({kToStart, L"Back to the start"});
+        p.links.push_back({kPlaceModel, L"把我的 nvngx_dlssnr.dll 复制到此文件夹...\n仅用于 DLSS 5 神经渲染。选择你已有的文件即可；不会下载任何东西。"});
+    p.links.push_back({kOpenFolder, L"打开 Lossless Scaling 文件夹"});
+    if (!r.backupDir.empty()) p.links.push_back({kOpenBackups, L"打开备份文件夹\n被替换或移除的文件都在里面"});
+    p.links.push_back({kToStart, L"返回开始页"});
     Finish(p);
     return p;
 }
@@ -327,11 +327,11 @@ std::wstring PickFile(HWND owner, bool folders) {
     dlg->GetOptions(&opts);
     if (folders) {
         dlg->SetOptions(opts | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM);
-        dlg->SetTitle(L"Choose the Lossless Scaling folder (the one with LosslessScaling.exe)");
+        dlg->SetTitle(L"选择 Lossless Scaling 文件夹（即包含 LosslessScaling.exe 的那个）");
     } else {
         dlg->SetOptions(opts | FOS_FORCEFILESYSTEM | FOS_FILEMUSTEXIST);
-        dlg->SetTitle(L"Choose your nvngx_dlssnr.dll");
-        const COMDLG_FILTERSPEC filter[] = {{L"DLL files", L"*.dll"}, {L"All files", L"*.*"}};
+        dlg->SetTitle(L"选择你的 nvngx_dlssnr.dll");
+        const COMDLG_FILTERSPEC filter[] = {{L"DLL 文件", L"*.dll"}, {L"所有文件", L"*.*"}};
         dlg->SetFileTypes(2, filter);
     }
     if (SUCCEEDED(dlg->Show(owner))) {
@@ -349,20 +349,20 @@ std::wstring PickFile(HWND owner, bool folders) {
 // Copy the person's own model file next to LosslessScaling.exe, checked by hash; only when there is none yet, so nothing is overwritten.
 std::wstring PlaceModel(App& a, const std::wstring& src) {
     const std::wstring target = JoinPath(a.folder, L"nvngx_dlssnr.dll");
-    if (Exists(target)) return L"There is already a nvngx_dlssnr.dll in that folder, so nothing was copied.";
+    if (Exists(target)) return L"该文件夹中已有 nvngx_dlssnr.dll，因此没有复制。";
     uint64_t size = 0;
-    if (!FileSizeOf(src, size) || size == 0) return L"That file could not be read, or it is empty.";
+    if (!FileSizeOf(src, size) || size == 0) return L"无法读取该文件，或文件是空的。";
     const std::wstring temp = target + L".tmp";
-    if (!CopyFileW(src.c_str(), temp.c_str(), FALSE)) return L"The file could not be copied into the folder.";
-    if (Sha256File(src).empty() || Sha256File(src) != Sha256File(temp)) { DeleteFileW(temp.c_str()); return L"The copy did not match the original, so it was removed."; }
-    if (!MoveFileExW(temp.c_str(), target.c_str(), 0)) { DeleteFileW(temp.c_str()); return L"The copy could not be put in place."; }
-    return L"Copied nvngx_dlssnr.dll into the folder. Open the manager, open the Neural Rendering panel and press \"Test compatibility\".";
+    if (!CopyFileW(src.c_str(), temp.c_str(), FALSE)) return L"无法把文件复制到该文件夹。";
+    if (Sha256File(src).empty() || Sha256File(src) != Sha256File(temp)) { DeleteFileW(temp.c_str()); return L"副本与原文件不一致，已将其删除。"; }
+    if (!MoveFileExW(temp.c_str(), target.c_str(), 0)) { DeleteFileW(temp.c_str()); return L"无法把副本放到目标位置。"; }
+    return L"已把 nvngx_dlssnr.dll 复制到文件夹。打开管理器，进入神经渲染面板，点击“测试兼容性”。";
 }
 
 void StartWork(HWND hwnd, App& a, bool uninstall, bool removeAddons) {
     a.done = false;
     a.resultIsUninstall = uninstall;
-    Navigate(hwnd, ProgressPage(a, uninstall ? L"Taking LS Addon Manager out..." : L"Installing LS Addon Manager..."));
+    Navigate(hwnd, ProgressPage(a, uninstall ? L"正在卸载 LS 插件管理器..." : L"正在安装 LS 插件管理器..."));
     if (a.worker.joinable()) a.worker.join();
     a.worker = std::thread([&a, uninstall, removeAddons] {
         a.result = uninstall ? Uninstall(a.folder, removeAddons) : Install(a.folder, a.payloadDir);
@@ -402,7 +402,7 @@ HRESULT OnButton(HWND hwnd, App& a, int id) {
             Refresh(a);
             if (a.state.situation == Situation::NotLosslessScaling) {   // the parent of the folder was picked: use the Lossless Scaling folder inside it, if there is exactly one
                 const auto inside = ScanDrive(picked);
-                if (inside.size() == 1) { a.folder = inside[0]; Refresh(a); a.note = L"Lossless Scaling was inside the folder you chose, so Setup uses that one."; }
+                if (inside.size() == 1) { a.folder = inside[0]; Refresh(a); a.note = L"Lossless Scaling 就在你选择的文件夹里面，因此安装程序改用它。"; }
             }
             RememberChoice(a);
             Navigate(hwnd, MainPage(a));
@@ -411,7 +411,7 @@ HRESULT OnButton(HWND hwnd, App& a, int id) {
     }
     case kAdmin:
         if (RestartElevated(a)) return S_OK;   // the elevated copy takes over; this one closes
-        a.note = L"Setup could not restart itself as administrator.";
+        a.note = L"安装程序无法以管理员身份重启自身。";
         Navigate(hwnd, MainPage(a));
         return S_FALSE;
     case kPlaceModel: {
@@ -595,7 +595,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int) {
         const uint8_t* data = nullptr;
         size_t size = 0;
         if (!EmbeddedPayload(data, size)) {
-            a.payloadError = "This setup file carries no files (it was built without them).";
+            a.payloadError = "这份安装程序没有携带可安装的文件（构建时未打包）。";
         } else {
             a.tempDir = JoinPath(tmp, L"LSAddonManagerSetup-" + std::to_wstring(GetCurrentProcessId()));
             std::string err;
@@ -635,7 +635,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int) {
         code = RunSilent(a, args, out);
     } else if (HANDLE once = CreateMutexW(nullptr, TRUE, (L"Local\\LSAddonManagerSetup" + Flag(args, L"--instance-name")).c_str()); GetLastError() == ERROR_ALREADY_EXISTS) {
         // A second window over the same folder could start a second install in the middle of the first: one Setup window at a time.
-        if (a.testCloseMs == 0) MessageBoxW(nullptr, L"LS Addon Manager Setup is already open. Look for its window on the taskbar.", L"LS Addon Manager Setup", MB_OK | MB_ICONINFORMATION);
+        if (a.testCloseMs == 0) MessageBoxW(nullptr, L"LS 插件管理器安装程序已经打开。请在任务栏上查找它的窗口。", L"LS 插件管理器安装程序", MB_OK | MB_ICONINFORMATION);
         code = 4;
         if (once) CloseHandle(once);
     } else {
