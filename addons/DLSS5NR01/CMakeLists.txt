@@ -4,6 +4,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 add_definitions(-DUNICODE -D_UNICODE -DWIN32_LEAN_AND_MEAN -DNOMINMAX -D_CRT_SECURE_NO_WARNINGS)
 
+# The panel text is Chinese: MSVC must be told the sources are UTF-8, or it reads
+# the literals as the local code page and every Chinese glyph turns to garbage.
+if(MSVC)
+    add_compile_options(/utf-8)
+endif()
+
 set(NGX_DIR ${CMAKE_SOURCE_DIR}/external/ngx)
 set(NGX_LIB ${NGX_DIR}/lib/nvsdk_ngx_s.lib)
 if(NOT EXISTS ${NGX_LIB} OR NOT EXISTS ${NGX_DIR}/include/nvsdk_ngx.h)

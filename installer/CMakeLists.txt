@@ -5,6 +5,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_definitions(-DUNICODE -D_UNICODE -DNOMINMAX)
 
+if(MSVC)
+    add_compile_options(/utf-8)   # the setup dialog text is Chinese: keep the literals UTF-8 in the binary
+endif()
+
 # The installer's core: find Lossless Scaling, tell whose Lossless.dll is whose, install / update / repair / uninstall with backups and a rollback.
 # It needs nothing but Windows.
 add_library(setup_core STATIC

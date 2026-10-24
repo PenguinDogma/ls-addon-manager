@@ -8,6 +8,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Define UNICODE for Windows GUI API
 add_definitions(-DUNICODE -D_UNICODE)
 
+# The UI text is Chinese: tell MSVC the sources and the string literals are UTF-8,
+# or it reads them as the local code page and every Chinese glyph turns to garbage.
+if(MSVC)
+    add_compile_options(/utf-8)
+endif()
+
 # Fetch ImGui
 include(FetchContent)
 FetchContent_Declare(

@@ -35,11 +35,24 @@ void ApplyUiScale(float dpiScale) {
     style.FontScaleDpi = g_uiScale;
 }
 
-static ImFont* TryAddFont(ImGuiIO& io, const std::string& path) {
+static ImFont* TryAddFont(ImGuiIO& io, const std::string& path, const ImWchar* glyphRanges = nullptr) {
     if (path.empty()) return nullptr;
     DWORD attrs = GetFileAttributesA(path.c_str());
     if (attrs == INVALID_FILE_ATTRIBUTES || (attrs & FILE_ATTRIBUTE_DIRECTORY)) return nullptr;
-    return io.Fonts->AddFontFromFileTTF(path.c_str());
+    return io.Fonts->AddFontFromFileTTF(path.c_str(), 0.0f, nullptr, glyphRanges);
+}
+
+// The UI is in Chinese, and Dear ImGui never falls back across fonts: a Latin-only
+// font shows every hanzi as '?'. So a Windows-bundled Chinese font (Deng Xian, else
+// SimHei) is merged, as extra glyph ranges, into the font that was just added.
+static void MergeChinese(ImGuiIO& io, const std::string& fontsDir) {
+    for (const char* name : { "Deng.ttf", "simhei.ttf" }) {
+        ImFontConfig cfg;
+        cfg.MergeMode = true;
+        if (io.Fonts->AddFontFromFileTTF((fontsDir + name).c_str(), 0.0f, &cfg,
+                                         io.Fonts->GetGlyphRangesChineseSimplifiedCommon()))
+            return;
+    }
 }
 
 void LoadUiFonts(const std::string& uiFontPath, const std::string& monoFontPath) {
@@ -54,17 +67,24 @@ void LoadUiFonts(const std::string& uiFontPath, const std::string& monoFontPath)
         if (ui) break;
         ui = TryAddFont(io, fontsDir + name);
     }
-    if (!ui) ui = io.Fonts->AddFontDefault();
+    const bool uiIsFromFile = (ui != nullptr);
+    if (!ui) ui = io.Fonts->AddFontDefault();   // the baked bitmap font cannot take merged glyphs
     io.FontDefault = ui;
+    if (uiIsFromFile) MergeChinese(io, fontsDir);
 
     g_titleFont = TryAddFont(io, fontsDir + "seguisb.ttf");
-    if (!g_titleFont) g_titleFont = ui;
+    if (g_titleFont) {
+        MergeChinese(io, fontsDir);   // Chinese header text falls back to the merged regular weight
+    } else {
+        g_titleFont = ui;
+    }
 
     g_monoFont = TryAddFont(io, monoFontPath);
     for (const char* name : { "CascadiaMono.ttf", "consola.ttf", "cour.ttf" }) {
         if (g_monoFont) break;
         g_monoFont = TryAddFont(io, fontsDir + name);
     }
+    // The mono font stays Latin-only: it draws logs and numbers, which stay in English.
 }
 
 ImFont* MonoFont() { return g_monoFont; }
