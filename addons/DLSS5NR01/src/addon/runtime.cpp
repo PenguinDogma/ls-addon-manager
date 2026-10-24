@@ -217,7 +217,7 @@ void PublishLive(const NrStats& st) {
     if (now - statusAt >= 1000) {
         statusAt = now;
         char text[96];
-        snprintf(text, sizeof text, keepUp >= 90.0 ? "Running, model %.1f ms, keeps up %.0f%%" : "Model is behind: %.1f ms, keeps up %.0f%%", st.nrMs, keepUp);
+        snprintf(text, sizeof text, keepUp >= 90.0 ? "运行中，模型 %.1f ms，跟得上 %.0f%%" : "模型落后：%.1f ms，跟得上 %.0f%%", st.nrMs, keepUp);
         g_host->SetStatus(kAddonId, text, keepUp >= 90.0 ? 1 : 2);
     }
 }
@@ -329,7 +329,7 @@ nr::FrameEncoding FrameEncodingOf(DXGI_FORMAT format, IDXGISwapChain* chain, flo
             display.whiteNits, setting ? ", set by hand" : "");
         char text[96];
         if (e == nr::FrameEncoding::Sdr) snprintf(text, sizeof text, "SDR");
-        else snprintf(text, sizeof text, "%s, SDR white %.0f nits", nr::EncodingName(e), display.whiteNits);
+        else snprintf(text, sizeof text, "%s，SDR 白点 %.0f nits", nr::EncodingName(e), display.whiteNits);
         std::lock_guard<std::mutex> lock(g_textMutex); g_encodingText = text;
     }
     return e;
@@ -373,9 +373,9 @@ void Tap(ID3D11DeviceContext* ctx, uint32_t x, uint32_t y, uint32_t z) {
     if (!EngineOnFrameCard(card)) { ReleaseDecision(d); return; }
 
     auto log = [](const char* m) { Log("%s", m); };
-    if (!g_bridge.IsReady() && !g_bridge.Init(g_tapDevice, ctx, &g_engine, log)) { SwitchOff("bridge init failed"); ReleaseDecision(d); return; }
-    if (!g_compose.IsReady() && !g_compose.Init(g_tapDevice, log)) { SwitchOff("compose init failed"); ReleaseDecision(d); return; }
-    if (!PresentHook::Installed() && !PresentHook::Install(g_tapDevice, OnPresent, log)) { SwitchOff("could not hook dxgi Present"); ReleaseDecision(d); return; }
+    if (!g_bridge.IsReady() && !g_bridge.Init(g_tapDevice, ctx, &g_engine, log)) { SwitchOff("桥接初始化失败"); ReleaseDecision(d); return; }
+    if (!g_compose.IsReady() && !g_compose.Init(g_tapDevice, log)) { SwitchOff("合成初始化失败"); ReleaseDecision(d); return; }
+    if (!PresentHook::Installed() && !PresentHook::Install(g_tapDevice, OnPresent, log)) { SwitchOff("无法挂钩 dxgi Present"); ReleaseDecision(d); return; }
 
     D3D11_TEXTURE2D_DESC frame; d.frame->GetDesc(&frame);
     if (frame.Width < 64 || frame.Height < 64) {   // a minimised window or one in the middle of a resize: nothing to do, and no reason to rebuild the model
@@ -383,11 +383,11 @@ void Tap(ID3D11DeviceContext* ctx, uint32_t x, uint32_t y, uint32_t z) {
         if (g_tap.Taps() - loggedAt > 600) { loggedAt = g_tap.Taps(); Log("skipping a %ux%u capture (too small)", frame.Width, frame.Height); }
         ReleaseDecision(d); return;
     }
-    { char text[96]; snprintf(text, sizeof text, "%ux%u %s slot %d", frame.Width, frame.Height, FormatName(frame.Format), d.frameSlot);
+    { char text[96]; snprintf(text, sizeof text, "%ux%u %s 槽 %d", frame.Width, frame.Height, FormatName(frame.Format), d.frameSlot);
       std::lock_guard<std::mutex> lock(g_textMutex); g_frameText = text; }
     if (!g_bridge.Ensure(frame.Width, frame.Height, frame.Format)) {
-        SetStatus(Bridge::FormatSupported(frame.Format) ? std::string("the frame copy for the model could not be set up (the Logs tab says why)")
-                                                        : std::string("unsupported frame format: ") + FormatName(frame.Format));
+        SetStatus(Bridge::FormatSupported(frame.Format) ? std::string("无法为模型建立帧复制（原因见日志页）")
+                                                        : std::string("不支持的帧格式：") + FormatName(frame.Format));
         ReleaseDecision(d); return;
     }
     { float white; const nr::FrameEncoding e = FrameEncodingOf(frame.Format, g_lsChain, &white); g_engine.SetFrameEncoding(static_cast<uint32_t>(e), white); }
@@ -422,7 +422,7 @@ void AfterHandOver(bool started, float ceiling, const AutoQuality::Settings& aut
     if (started) {
         ++g_runs; g_lastModelMs = st.nrMs; g_lastRunMs = st.totalMs; g_lastRunAtMs = GetTickCount64();
         g_avgModelMs = g_avgModelMs == 0 ? st.nrMs : g_avgModelMs * 0.95 + st.nrMs * 0.05;
-        if (g_runs == 1) SetStatus("running");
+        if (g_runs == 1) SetStatus("运行中");
         // auto quality: the scale it picks here is used from the next frame (changing it rebuilds the model)
         float stable = 0;   // the scale it has held for 30 s with the model in budget: kept, so the next session starts there
         const uint64_t now = GetTickCount64();
@@ -462,13 +462,13 @@ void AfterHandOver(bool started, float ceiling, const AutoQuality::Settings& aut
     // the watchdog: a model that stays slower than the limit for 30 frames is switched off, and back on 10 s later (a loading screen or a
     // change of focus is no reason to stay off)
     if (st.nrMs > watchdogMs) {
-        if (++g_watchdogHits >= 30) { SwitchOff("NR slower than watchdog threshold for 30 frames"); g_offByWatchdog = true; g_backOnAtMs = GetTickCount64() + 10000; }
+        if (++g_watchdogHits >= 30) { SwitchOff("模型连续 30 帧超过看门狗阈值"); g_offByWatchdog = true; g_backOnAtMs = GetTickCount64() + 10000; }
     } else g_watchdogHits = 0;
     LogProgress(st);
 }
 
 int OnFault(unsigned code, const char* where) {
-    char text[64]; snprintf(text, sizeof text, "exception 0x%08x in %s", code, where);
+    char text[64]; snprintf(text, sizeof text, "异常 0x%08x（%s处）", code, where);
     SwitchOff(text);
     return EXCEPTION_EXECUTE_HANDLER;
 }
@@ -481,7 +481,7 @@ void PutTapBindingsBack(ID3D11DeviceContext* ctx) {
     g_tapBoundOpen = false;
 }
 void TapGuarded(ID3D11DeviceContext* ctx, uint32_t x, uint32_t y, uint32_t z) {   // no objects here: __try cannot unwind them
-    __try { Tap(ctx, x, y, z); } __except (OnFault(GetExceptionCode(), "tap")) { PutTapBindingsBack(ctx); }
+    __try { Tap(ctx, x, y, z); } __except (OnFault(GetExceptionCode(), "截取")) { PutTapBindingsBack(ctx); }
 }
 
 // Each device that dispatches is judged once: only one on an NVIDIA card is tapped (under g_frameMutex).
@@ -494,11 +494,11 @@ bool Tappable(ID3D11DeviceContext* ctx) {
     if (g_seen.size() < 32) g_seen.push_back({ dev, card.nvidia, card.luid });
     if (card.nvidia && g_tapDevice != dev) { g_bridge.Shutdown(); g_compose.Shutdown(); g_tap.Reset(); ForgetCadence(); g_tapDevice = dev; g_lsChain = nullptr; g_otherChain = nullptr; }
     char text[192];
-    snprintf(text, sizeof text, "%p on %s (LUID %08x) -> %s", static_cast<void*>(dev), card.name.c_str(), static_cast<unsigned>(card.luid.LowPart), card.nvidia ? "TAPPED" : "ignored");
+    snprintf(text, sizeof text, "%p 在 %s（LUID %08x）-> %s", static_cast<void*>(dev), card.name.c_str(), static_cast<unsigned>(card.luid.LowPart), card.nvidia ? "已截取" : "忽略");
     if (card.nvidia) { std::lock_guard<std::mutex> lock(g_textMutex); g_tappedDeviceText = text; }
     else if (!g_tapDevice)   // frame generation runs on this card and no NVIDIA one has been seen: say so, naming it (not a guess from device events)
-        SetStatus("frame generation runs on " + (card.name.empty() ? std::string("a card") : card.name) + ", not an NVIDIA card: DLSS 5 needs an NVIDIA "
-                  "RTX card. Set Lossless Scaling's Preferred GPU to your NVIDIA card.");
+        SetStatus("帧生成运行在 " + (card.name.empty() ? std::string("未知显卡") : card.name) + " 上，不是 NVIDIA 显卡：DLSS 5 需要 NVIDIA "
+                  "RTX 显卡。请把 Lossless Scaling 的 Preferred GPU 设为你的 NVIDIA 显卡。");
     Log("dispatching device %s", text);
     dev->Release();
     return card.nvidia;
@@ -712,17 +712,17 @@ void PresentTap(IDXGISwapChain* sc) {   // under g_frameMutex, on the presenting
     if (!EngineOnFrameCard(card)) return;
     ID3D11DeviceContext* ctx = nullptr; g_tapDevice->GetImmediateContext(&ctx);
     auto log = [](const char* m) { Log("%s", m); };
-    if (!g_bridge.IsReady() && !g_bridge.Init(g_tapDevice, ctx, &g_engine, log)) { ctx->Release(); SwitchOff("bridge init failed"); return; }
-    if (!g_compose.IsReady() && !g_compose.Init(g_tapDevice, log)) { ctx->Release(); SwitchOff("compose init failed"); return; }
+    if (!g_bridge.IsReady() && !g_bridge.Init(g_tapDevice, ctx, &g_engine, log)) { ctx->Release(); SwitchOff("桥接初始化失败"); return; }
+    if (!g_compose.IsReady() && !g_compose.Init(g_tapDevice, log)) { ctx->Release(); SwitchOff("合成初始化失败"); return; }
     ID3D11Texture2D* buffer = nullptr;
     if (FAILED(sc->GetBuffer(0, IID_PPV_ARGS(&buffer)))) { ctx->Release(); return; }
     D3D11_TEXTURE2D_DESC frame; buffer->GetDesc(&frame);
     Record(ctx, buffer, lsrec::kPresented);   // before the compose puts anything on it
     const bool fits = frame.Width >= 64 && frame.Height >= 64 && g_bridge.Ensure(frame.Width, frame.Height, frame.Format);
-    if (!fits && frame.Width >= 64 && frame.Height >= 64) SetStatus("frame generation off: the presented frame's format cannot be given to the model");
+    if (!fits && frame.Width >= 64 && frame.Height >= 64) SetStatus("帧生成关闭：呈现的帧格式无法交给模型");
     if (fits) {
         { float white; const nr::FrameEncoding e = FrameEncodingOf(frame.Format, sc, &white); g_engine.SetFrameEncoding(static_cast<uint32_t>(e), white); }
-        { char text[96]; snprintf(text, sizeof text, "%ux%u %s at Present (frame generation off)", frame.Width, frame.Height, FormatName(frame.Format));
+        { char text[96]; snprintf(text, sizeof text, "%ux%u %s 呈现时（帧生成关闭）", frame.Width, frame.Height, FormatName(frame.Format));
           std::lock_guard<std::mutex> lock(g_textMutex); g_frameText = text; }
         NrParams p; float watchdogMs; bool lsFirst; AutoQuality::Settings autoSettings; float autoSeed;
         { std::lock_guard<std::mutex> lock(g_settingsMutex); p = g_config.p; watchdogMs = g_config.watchdogMs; lsFirst = g_config.lsFirst; autoSeed = g_config.autoScaleLast;
@@ -903,7 +903,7 @@ void Compose(IDXGISwapChain* sc) {
     buffer->Release();
 }
 void PresentGuarded(IDXGISwapChain* sc) {   // no objects here: __try cannot unwind them
-    __try { Present(sc); } __except (OnFault(GetExceptionCode(), "present")) { t_ownWork = false; }
+    __try { Present(sc); } __except (OnFault(GetExceptionCode(), "呈现")) { t_ownWork = false; }
 }
 
 // "Record what is shown" for the upscalers: the output swap chain's back buffer as it goes to the screen (after the upscaler, the frames Lossless Scaling made between included),
@@ -954,7 +954,7 @@ void OnPresent(IDXGISwapChain* sc, UINT sync, UINT flags) {
         if (now - saidAt >= 1000) {
             saidAt = now;
             std::string why; { std::lock_guard<std::mutex> lock(g_textMutex); why = g_offReason; }
-            g_host->SetStatus(kAddonId, ("Switched off: " + why).c_str(), 3);
+            g_host->SetStatus(kAddonId, ("已禁用：" + why).c_str(), 3);
         }
     }
     if (g_off || g_engineStarting || !sc) return;
@@ -1016,7 +1016,7 @@ bool OwnsFrames() {   // the caller has checked that this addon is on
     { std::lock_guard<std::mutex> lock(g_settingsMutex); g_config.enabled = false; }   // so this runs once
     g_ownsFrames = false;
     Log("switched off: %s is on now (only one of the two works on the frames)", ProductNameOf(owner.c_str()));
-    SetStatus(std::string("off: ") + ProductNameOf(owner.c_str()) + " is on");
+    SetStatus(std::string("已停用：") + ProductNameOf(owner.c_str()) + " 已开启");
     LetFramesGo();
     return false;
 }
@@ -1049,12 +1049,12 @@ void StartEngine(LUID card) {
         auto failed = [card](const char* why) {
             Log("%s", why);
             g_failedCard = card; g_failedCardKnown = true;
-            SetStatus("engine failed (exception; see the log)");
+            SetStatus("引擎失败（异常；见日志）");
             g_engineStarting = false;
         };
         try {
             { std::lock_guard<std::mutex> lock(g_frameMutex); g_bridge.Shutdown(); if (g_engine.IsReady() || g_engine.IsFailed()) g_engine.Shutdown(); }
-            SetStatus("engine: loading model...");
+            SetStatus("引擎：正在加载模型...");
             { std::lock_guard<std::mutex> lock(g_settingsMutex);
               g_engine.SetModel(g_config.model == 1 ? NrEngine::Model::Dlaa : NrEngine::Model::NeuralRendering, g_config.dlaaPreset == SrEngine::kPresetAuto ? 5u : g_config.dlaaPreset); }   // (its DLSS runs at 1:1: auto is E)
             g_vramLuid = card; g_vramBaseMb = nr::ProcessVideoMemoryMb(card); if (g_vramBaseMb) Log("video memory: this process holds %llu MB on the card before Neural Rendering starts", static_cast<unsigned long long>(g_vramBaseMb));
@@ -1065,7 +1065,7 @@ void StartEngine(LUID card) {
                 g_failedCard = card; g_failedCardKnown = true;
                 Log("engine failed on LUID %08x:%08x; it will start again when LS runs LSFG on another NVIDIA adapter", card.HighPart, card.LowPart);
             }
-            SetStatus(ok ? "engine ready" : g_engine.Stats().lastError);
+            SetStatus(ok ? "引擎就绪" : g_engine.Stats().lastError);
             g_engineStarting = false;
         } catch (const std::exception& e) {
             failed((std::string("engine start threw: ") + e.what()).c_str());
@@ -1092,8 +1092,8 @@ void OnDeviceEvent(uint32_t id, const void*, uint32_t, void*) {
         card.nvidia ? "NVIDIA, ok" : kAnyCardScaler ? "not NVIDIA, ok for this upscaler" : "not NVIDIA, ignored");
     // (the upscalers judge the card on the NIS pass itself, which names the card really in use: Lossless Scaling makes devices on others too)
     // (nor does Neural Rendering: the card frame generation really runs on is named from its passes, in Tappable)
-    if (kScalerAddon) SetStatus("waiting for Lossless Scaling's NIS pass (Scaling Type: NIS, the game in a window smaller than the screen)");   // once it runs, the upscaler's own line
-    else if (!g_engine.IsReady()) SetStatus("waiting for LSFG dispatches");
+    if (kScalerAddon) SetStatus("等待 Lossless Scaling 的 NIS 处理趟（缩放类型选 NIS，游戏以小于屏幕的窗口运行）");   // once it runs, the upscaler's own line
+    else if (!g_engine.IsReady()) SetStatus("等待 LSFG 分发");
     // The engine starts from the tap, on the card whose device actually runs LSFG (one card, a hybrid laptop, or either card of a two-card
     // machine), not from these events, which come for every device Lossless Scaling makes.
 }
@@ -1268,7 +1268,7 @@ void StartEngineFor(const LUID& card) {   // the engine's own device only: safe 
         pinned = GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN, reinterpret_cast<LPCWSTR>(&StartEngineFor), &self) != 0;
     }
     g_srStarting = true;
-    SetStatus(std::string(kUpscalerName) + ": starting...");
+    SetStatus(std::string(kUpscalerName) + "：启动中...");
     g_srRuntimeDir = ChosenRuntimeDir();
     if (kScalerAddon && g_host) {   // a runtime that is not the shipped one is on trial until it has upscaled a few hundred frames
         const std::string chosen = g_host->GetConfig(kAddonId, kRuntimeKey, "");
@@ -1284,9 +1284,9 @@ void StartEngineFor(const LUID& card) {   // the engine's own device only: safe 
         if (ok) LogVideoMemory("the upscaler started: the figure after, then what it added (its textures are made at the first frame)");
         if (ok) {   // the comparison's label (Ctrl+Shift+F9) says which runtime is running (issue 21)
             const std::string version = FileVersion(dir + L"\\" + kRuntimeFileW);
-            compare::SetDetail(version.empty() ? "" : (std::string("RUNTIME ") + version).c_str());
+            compare::SetDetail(version.empty() ? "" : (std::string("运行时 ") + version).c_str());
         }
-        SetStatus(ok ? std::string(kUpscalerName) + " ready" : g_sr.LastError());
+        SetStatus(ok ? std::string(kUpscalerName) + " 就绪" : g_sr.LastError());
         g_srStarting = false;
     }).detach();
 }
@@ -1366,10 +1366,10 @@ bool ScalerPass(ID3D11DeviceContext* ctx, uint32_t x, uint32_t y, uint32_t z) {
     g_passStep = "looking for the NIS pass";
     if (!FindNisPass(ctx, x, y, z, pass, [](const char* m) { Log("%s", m); })) {
         if (NisLayoutRefused())   // NIS is chosen, but for a window it scales into part of the screen in a way that cannot be followed
-            SetScalerBlocked(g_upscaled ? "Lossless Scaling also draws a pass into part of the screen that the upscaler leaves alone (NIS stays for that one). Normal while frames are being upscaled: "
-                                          "the log's \"frames upscaled\" lines count them."
-                                        : "Lossless Scaling scales this window into part of the screen in a way the upscaler cannot follow yet, so NIS stays. "
-                                          "A window of the screen's shape (16:9 on a 16:9 screen) or full screen works. The Logs tab has the details: please report it.");
+            SetScalerBlocked(g_upscaled ? "Lossless Scaling 还往屏幕的一部分绘制另一个处理趟，上采样器不碰那部分（NIS 保留处理它）。正在上采样时这属正常："
+                                          "日志里的 \"frames upscaled\" 行会计数。"
+                                        : "Lossless Scaling 把这个窗口缩放到屏幕的一部分，其方式上采样器还无法跟随，因此 NIS 保留。"
+                                          "窗口与屏幕比例相同（16:9 屏幕上用 16:9）或全屏即可。详情见日志页：请反馈此问题。");
         return false;
     }
     ++g_nisSeen; ++g_nisSinceTap; NotePresentTime();
@@ -1417,10 +1417,10 @@ bool ScalerPass(ID3D11DeviceContext* ctx, uint32_t x, uint32_t y, uint32_t z) {
             const Card card = CardOf(dev);
             if (card.nvidia || kAnyCardScaler) { SetScalerBlocked(""); StartEngineFor(card.luid); }   // FSR and XeSS run on any card
             else {
-                if (g_nisSeen == 1) SetStatus("waiting: Lossless Scaling's device is not an NVIDIA card");
-                SetScalerBlocked("Lossless Scaling runs on " + (card.name.empty() ? std::string("a card") : card.name) +
-                                 ", not an NVIDIA card, and DLSS needs an NVIDIA RTX card. Set Lossless Scaling's Preferred GPU to your NVIDIA card, or use the "
-                                 "FSR Upscaler, which runs on any card.");
+                if (g_nisSeen == 1) SetStatus("等待中：Lossless Scaling 的设备不是 NVIDIA 显卡");
+                SetScalerBlocked("Lossless Scaling 运行在 " + (card.name.empty() ? std::string("未知显卡") : card.name) +
+                                 " 上，不是 NVIDIA 显卡，而 DLSS 需要 NVIDIA RTX 显卡。请把 Lossless Scaling 的 Preferred GPU 设为你的 NVIDIA 显卡，"
+                                 "或改用可在任何显卡上运行的 FSR 上采样器。");
             }
         } else if (g_sr.IsReady()) {
             if (dev != g_linkDevice) {   // Lossless Scaling's (new) device: the link is made on it, here on its render thread
@@ -1545,12 +1545,12 @@ bool ScalerPass(ID3D11DeviceContext* ctx, uint32_t x, uint32_t y, uint32_t z) {
                 if (!replaced && g_sr.IsFailed()) SetStatus(g_sr.LastError());
                 ++g_linkTries;
                 if (!replaced && g_link.LastRefusedFormat())
-                    SetScalerBlocked("this game's frames are in a format the upscalers cannot take (the Logs tab names it), so NIS stays. Please report it.");
+                    SetScalerBlocked("这个游戏的帧格式是上采样器无法接受的（名称见日志页），因此 NIS 保留。请反馈此问题。");
                 else if (replaced || g_upscaled) SetScalerBlocked("");
                 else if (g_linkTries > 240 && (handoff == static_cast<int>(ScalerLink::Handoff::Late) || handoff == static_cast<int>(ScalerLink::Handoff::Wait)))
-                    SetScalerBlocked("it is ready but has not replaced a frame yet. The Logs tab says why.");   // (Observe and AtPresent never replace it)
+                    SetScalerBlocked("它已就绪，但尚未接管过任何帧。原因见日志页。");   // (Observe and AtPresent never replace it)
             } else if (g_linkDevice != dev) {
-                SetScalerBlocked("it is ready but could not be connected to Lossless Scaling's device. The Logs tab says why.");
+                SetScalerBlocked("它已就绪，但无法连接到 Lossless Scaling 的设备。原因见日志页。");
             }
         }
     }
@@ -1597,7 +1597,7 @@ bool ScalerPass(ID3D11DeviceContext* ctx, uint32_t x, uint32_t y, uint32_t z) {
             g_host->SetStatus(kAddonId, text, 1);
             if (g_host->GetHostVersion() >= 0x010000) g_host->PublishMetric(kAddonId, kXessScaler ? "xess_ms" : kFsrScaler ? "fsr_ms" : "dlss_ms", g_sr.GpuMs(), "ms");
             SetStatus(text);
-        } else if (g_compare.load() == 2) g_host->SetStatus(kAddonId, "Showing Lossless Scaling's NIS (Before / after)", 0);
+        } else if (g_compare.load() == 2) g_host->SetStatus(kAddonId, "正在显示 Lossless Scaling 的 NIS（前后对比）", 0);
     }
     if (replaced && g_upscaled == 600 && g_trialWritten) { ClearRuntimeTrialImpl(); g_trialWritten = false; }   // (it has upscaled ten seconds of frames: it does not take the process down at once)
     if (replaced && (g_upscaled == 120 || g_upscaled % 6000 == 0)) LogVideoMemory("with the periodic lines: the figure now, then what it added since the engine started");
@@ -1622,7 +1622,7 @@ bool ScalerFault(EXCEPTION_POINTERS* info) {
         else snprintf(where, sizeof where, " at %s+0x%llx", name, off);
     }
     Log("%s upscaler: exception 0x%08x%s, in the step \"%s\"", kUpscalerName, code, where, g_link.Step());
-    char text[64]; snprintf(text, sizeof text, "exception 0x%08x in the DLSS scaler", code);
+    char text[64]; snprintf(text, sizeof text, "DLSS 缩放器异常 0x%08x", code);
     SwitchOff(text);
     return true;
 }
@@ -1789,7 +1789,7 @@ std::vector<RuntimeChoice> RuntimeChoices() {
     if (!kScalerAddon) return list;
     const std::wstring shipped = g_addonDir + L"\\" + kRuntimeFolderW + L"\\" + RuntimeFileName();
     const std::string shippedVersion = kFsrScaler ? std::string("3.1.4") : FileVersion(shipped);
-    list.push_back({ L"", std::string(kUpscalerName) + " " + shippedVersion + " (" + kRuntimeVendor + ", shipped)" });
+    list.push_back({ L"", std::string(kUpscalerName) + " " + shippedVersion + "（" + kRuntimeVendor + "，插件自带）" });
     WIN32_FIND_DATAW found{};
     const std::wstring folder = g_addonDir + L"\\runtimes\\" + kRuntimeListW;
     const HANDLE h = FindFirstFileW((folder + L"\\*").c_str(), &found);
@@ -1844,12 +1844,12 @@ void FollowModelChoice() {
 void RequestPair() { g_pairRequested = true; }   // the panel's button (the pair is taken at the next passes)
 
 std::string ScalerEngineText() {
-    if (g_srStarting) return "starting";
+    if (g_srStarting) return "启动中";
     bool blocked; { std::lock_guard<std::mutex> lock(g_textMutex); blocked = !g_scalerBlocked.empty(); }
-    if (g_sr.IsReady()) return blocked ? "ready, but not replacing NIS (the Upscaling section says why)" : !g_nisSeen ? "ready, waiting for the NIS pass" : "running";
-    if (g_sr.IsFailed()) return "failed: " + g_sr.LastError();
-    if (blocked) return "not started: something is in the way (the Upscaling section says what)";
-    return g_nisSeen ? "not started (the NIS pass is seen)" : "not started: it starts when Lossless Scaling runs its NIS pass";
+    if (g_sr.IsReady()) return blocked ? "就绪，但未接管 NIS（原因见上采样一节）" : !g_nisSeen ? "就绪，等待 NIS 处理趟" : "运行中";
+    if (g_sr.IsFailed()) return "失败：" + g_sr.LastError();
+    if (blocked) return "未启动：有阻碍（原因见上采样一节）";
+    return g_nisSeen ? "未启动（已见到 NIS 处理趟）" : "未启动：Lossless Scaling 运行其 NIS 处理趟时启动";
 }
 
 } // namespace nr
