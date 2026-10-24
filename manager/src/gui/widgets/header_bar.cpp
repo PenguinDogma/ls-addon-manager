@@ -61,12 +61,12 @@ void HeaderBar() {
     float x = origin.x + logo + S(12);
     const float titleSize = base * 1.25f * ImGui::GetStyle().FontScaleDpi;
     const float titleY = origin.y + (height - titleSize) * 0.5f - S(2);
-    dl->AddText(title ? title : ImGui::GetFont(), titleSize, ImVec2(x, titleY), U(kText), "Addon Manager");
-    x += (title ? title : ImGui::GetFont())->CalcTextSizeA(titleSize, FLT_MAX, 0.0f, "Addon Manager").x + S(8);
+    dl->AddText(title ? title : ImGui::GetFont(), titleSize, ImVec2(x, titleY), U(kText), "插件管理器");
+    x += (title ? title : ImGui::GetFont())->CalcTextSizeA(titleSize, FLT_MAX, 0.0f, "插件管理器").x + S(8);
     const float smallSize = ImGui::GetFontSize() * 0.92f;
     const float smallY = titleY + titleSize - smallSize - S(1);
-    dl->AddText(ImGui::GetFont(), smallSize, ImVec2(x, smallY), U(kMuted), "for Lossless Scaling");
-    x += ImGui::GetFont()->CalcTextSizeA(smallSize, FLT_MAX, 0.0f, "for Lossless Scaling").x + S(10);
+    dl->AddText(ImGui::GetFont(), smallSize, ImVec2(x, smallY), U(kMuted), "适用于 Lossless Scaling");
+    x += ImGui::GetFont()->CalcTextSizeA(smallSize, FLT_MAX, 0.0f, "适用于 Lossless Scaling").x + S(10);
     const std::string version = std::string("v") + EAM_VERSION_STRING;
     const ImVec2 vs = ImGui::GetFont()->CalcTextSizeA(smallSize * 0.92f, FLT_MAX, 0.0f, version.c_str());
     const ImVec2 chip(x, smallY - S(1));
@@ -76,7 +76,7 @@ void HeaderBar() {
     {   // an update is waiting (also after "Not now" or "Don't ask again"): a badge that opens the offer
         const update::Status us = update::Current();
         if (us.state == update::State::Available && !us.latest.empty()) {
-            const std::string label = "Update " + us.latest + " available";
+            const std::string label = "有新版本 " + us.latest + " 可更新";
             const float fs = smallSize * 0.92f;
             const ImVec2 ts = ImGui::GetFont()->CalcTextSizeA(fs, FLT_MAX, 0.0f, label.c_str());
             const ImVec2 p0(leftEnd + S(10), chip.y - S(1)), p1(p0.x + ts.x + S(14), p0.y + ts.y + S(5));
@@ -87,7 +87,7 @@ void HeaderBar() {
             ImGui::SetCursorScreenPos(saved);
             dl->AddRectFilled(p0, p1, hovered ? U(kAccent) : U(kAccentDim), S(3.0f));
             dl->AddText(ImGui::GetFont(), fs, ImVec2(p0.x + S(7), p0.y + S(2.5f)), hovered ? U(kBg) : U(kText), label.c_str());
-            if (hovered) Tip("A newer version is available. Click for what is new and to install it.");
+            if (hovered) Tip("有新版本可用。点击查看更新内容并安装。");
             if (clicked) OpenUpdateOffer();
             leftEnd = p1.x;
         }
@@ -138,17 +138,17 @@ void HeaderBar() {
         std::string tip;
         char line[160];
         if (g.ok) {
-            snprintf(line, sizeof line, "%s\n%u%% load, %u C, %.0f of %.0f W\n%u MHz core, %u MHz memory\n%s of video memory in use\n\n", g.name.c_str(), g.utilGpu, g.tempC,
+            snprintf(line, sizeof line, "%s\n负载 %u%%，温度 %u °C，功耗 %.0f / %.0f W\n核心 %u MHz，显存 %u MHz\n已用显存 %s\n\n", g.name.c_str(), g.utilGpu, g.tempC,
                      g.powerW, g.powerLimitW, g.clockGraphics, g.clockMem, Gigabytes(g.vramUsedMB, g.vramTotalMB).c_str());
             tip += line;
         } else if (!g.why.empty()) {
-            tip += "Graphics card: " + g.why + "\n\n";
+            tip += "显卡：" + g.why + "\n\n";
         }
         if (s.ok) {
-            snprintf(line, sizeof line, "%s of system memory in use\nProcessor %.0f%% busy (all cores)", Gigabytes(s.ramUsedMB, s.ramTotalMB).c_str(), s.cpuPercent);
+            snprintf(line, sizeof line, "系统内存已用 %s\n处理器占用 %.0f%%（所有核心）", Gigabytes(s.ramUsedMB, s.ramTotalMB).c_str(), s.cpuPercent);
             tip += line;
         }
-        tip += "\n\nThe Performance tab has the history and what it means.";
+        tip += "\n\n历史记录及其含义见“性能”页。";
         Tip(tip.c_str());
     }
 }

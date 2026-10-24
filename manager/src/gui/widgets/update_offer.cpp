@@ -19,7 +19,7 @@ bool g_requested = false;          // the About tab asked for it
 uint64_t g_closeAskedAt = 0;      // when Lossless Scaling was asked to close for the update (0: not asked)
 int g_closeAsked = 0;              // how many windows were asked
 int64_t g_offeredAt = 0;           // the check the offer last opened for by itself ("Not now" lasts until the next daily check)
-constexpr const char* kPopup = "Update available###update_offer";
+constexpr const char* kPopup = "有可用更新###update_offer";
 
 std::wstring LosslessScalingFolder() {   // the manager lives in LosslessScaling.exe: its folder
     wchar_t exe[MAX_PATH] = {};
@@ -54,85 +54,85 @@ void UpdateOffer() {
     auto close = [] { ImGui::CloseCurrentPopup(); };
 
     if (step == update::Phase::Downloading || step == update::Phase::Checking) {
-        ImGui::Text("Downloading LS Addon Manager %s...", st.latest.c_str());
+        ImGui::Text("正在下载 LS 插件管理器 %s…", st.latest.c_str());
         const float mb = static_cast<float>(pr.done) / 1048576.0f, of = static_cast<float>(pr.total) / 1048576.0f;
         char label[64];
-        if (pr.total) snprintf(label, sizeof label, "%.0f of %.0f MB", mb, of); else snprintf(label, sizeof label, "%.0f MB", mb);
+        if (pr.total) snprintf(label, sizeof label, "%.0f / %.0f MB", mb, of); else snprintf(label, sizeof label, "%.0f MB", mb);
         ImGui::ProgressBar(pr.total ? mb / of : -1.0f * static_cast<float>(ImGui::GetTime()), ImVec2(-1, 0), label);
-        Wrapped("Then it is checked against GitHub's fingerprint of the release before anything is used.", true);
+        Wrapped("在投入使用前，会先对照 GitHub 上该版本的指纹进行校验。", true);
         ImGui::Dummy(ImVec2(0, S(4)));
-        if (ui::Button("Cancel", ui::icons::kClose)) update::CancelDownload();
+        if (ui::Button("取消", ui::icons::kClose)) update::CancelDownload();
     } else if (step == update::Phase::Ready) {
-        if (pr.fingerprintChecked) ImGui::Text("LS Addon Manager %s is downloaded and checked.", st.latest.c_str());
-        else ImGui::Text("LS Addon Manager %s is downloaded. GitHub gave no fingerprint for it, so it was checked for its size and for Setup's name and version only.", st.latest.c_str());
+        if (pr.fingerprintChecked) ImGui::Text("LS 插件管理器 %s 已下载并校验完成。", st.latest.c_str());
+        else ImGui::Text("LS 插件管理器 %s 已下载。GitHub 未提供它的指纹，因此只校验了文件大小与安装程序的名称和版本。", st.latest.c_str());
         ImGui::Dummy(ImVec2(0, S(2)));
-        Wrapped("To install it, Lossless Scaling has to close: Setup waits for that, updates it (with backups, as always) and starts it again. "
-                "Your settings carry over.");
+        Wrapped("安装前需要关闭 Lossless Scaling：安装程序会等它退出，完成更新（照常会先备份）并重新启动。"
+                "你的设置会全部保留。");
         ImGui::Dummy(ImVec2(0, S(2)));
-        Wrapped("\"Close it and install\" asks Lossless Scaling to close itself, as its window's X would: any scaling in progress ends.", true);
+        Wrapped("“关闭并安装”会让 Lossless Scaling 自行关闭，效果与你点它的窗口 X 相同：进行中的缩放会立即结束。", true);
         ImGui::Dummy(ImVec2(0, S(6)));
-        if (ui::Button("Close it and install", ui::icons::kDownload, ui::ButtonKind::Primary)) {
+        if (ui::Button("关闭并安装", ui::icons::kDownload, ui::ButtonKind::Primary)) {
             std::string error;
-            if (!update::StartSetup(LosslessScalingFolder(), error)) ToastShow("Setup could not be started: " + error, ToastType::Error, 8.0f);
+            if (!update::StartSetup(LosslessScalingFolder(), error)) ToastShow("无法启动安装程序：" + error, ToastType::Error, 8.0f);
             else { g_closeAsked = update::AskLosslessScalingToClose(); g_closeAskedAt = GetTickCount64(); }
         }
         ImGui::SameLine();
-        if (ui::Button("Install when I close it", ui::icons::kCheck)) {
+        if (ui::Button("我关闭后再安装", ui::icons::kCheck)) {
             std::string error;
             g_closeAskedAt = 0; g_closeAsked = 0;   // (nothing is asked this time: an earlier "Close it and install" must not show here)
-            if (!update::StartSetup(LosslessScalingFolder(), error)) ToastShow("Setup could not be started: " + error, ToastType::Error, 8.0f);
+            if (!update::StartSetup(LosslessScalingFolder(), error)) ToastShow("无法启动安装程序：" + error, ToastType::Error, 8.0f);
         }
         ImGui::SameLine();
-        if (ui::Button("Later", ui::icons::kClose)) close();   // it stays downloaded: the About tab's button brings this back
+        if (ui::Button("稍后", ui::icons::kClose)) close();   // it stays downloaded: the About tab's button brings this back
     } else if (step == update::Phase::Handed) {
-        ImGui::TextUnformatted("Setup is waiting for Lossless Scaling to close.");
+        ImGui::TextUnformatted("安装程序正在等待 Lossless Scaling 关闭。");
         ImGui::Dummy(ImVec2(0, S(2)));
         const uint64_t waited = g_closeAskedAt ? GetTickCount64() - g_closeAskedAt : 0;
         if (g_closeAskedAt && g_closeAsked > 0 && waited < 10000) {
-            Wrapped("Lossless Scaling was asked to close; it should be gone in a moment. Setup then updates it and starts it again.");
+            Wrapped("已请求 Lossless Scaling 关闭，它应该很快就会退出。随后安装程序会更新它并重新启动。");
         } else if (g_closeAskedAt) {
-            Wrapped(g_closeAsked > 0 ? "Lossless Scaling did not close when asked (a dialog may be open in it, or it is busy)."
-                                     : "Lossless Scaling has no open window to ask (it is probably in the tray).");
-            Wrapped("Close it yourself (its window, or right-click its icon next to the clock and choose Exit), or end it here: any scaling in progress is lost at once.", true);
+            Wrapped(g_closeAsked > 0 ? "请求后 Lossless Scaling 没有关闭（可能它的某个对话框还开着，或正忙）。"
+                                     : "Lossless Scaling 没有可请求关闭的窗口（多半在系统托盘里）。");
+            Wrapped("请自行关闭（它的窗口，或右键任务栏时钟旁的图标并选“退出”），也可以在这里直接结束：进行中的缩放会立即丢失。", true);
             ImGui::Dummy(ImVec2(0, S(4)));
-            if (ui::Button("Ask again", ui::icons::kCheck)) { g_closeAsked = update::AskLosslessScalingToClose(); g_closeAskedAt = GetTickCount64(); }
+            if (ui::Button("再次请求", ui::icons::kCheck)) { g_closeAsked = update::AskLosslessScalingToClose(); g_closeAskedAt = GetTickCount64(); }
             ImGui::SameLine();
-            if (ui::Button("End it now", ui::icons::kClose)) update::EndLosslessScalingNow();
+            if (ui::Button("立即结束", ui::icons::kClose)) update::EndLosslessScalingNow();
             ImGui::SameLine();
         } else {
-            Wrapped("Close Lossless Scaling: its window, or right-click its icon next to the clock and choose Exit. Setup then updates it and starts it again.");
+            Wrapped("请关闭 Lossless Scaling（它的窗口，或右键任务栏时钟旁的图标并选“退出”）。随后安装程序会更新它并重新启动。");
         }
         ImGui::Dummy(ImVec2(0, S(6)));
-        if (ui::Button("OK", ui::icons::kCheck, ui::ButtonKind::Primary)) close();
+        if (ui::Button("确定", ui::icons::kCheck, ui::ButtonKind::Primary)) close();
     } else {   // the offer (or the offer again after a failed or cancelled try)
-        ImGui::Text("LS Addon Manager %s is available.", st.latest.c_str());
-        ImGui::TextDisabled("You have %s.", EAM_VERSION_STRING);
+        ImGui::Text("有新版 LS 插件管理器 %s。", st.latest.c_str());
+        ImGui::TextDisabled("你当前的版本是 %s。", EAM_VERSION_STRING);
         if (forThis && pr.step == update::Phase::Failed && pr.error != "cancelled") {
             ImGui::PushStyleColor(ImGuiCol_Text, ui::theme::V(ui::theme::kWarn));
-            ImGui::TextWrapped("The download did not work: %s.", pr.error.c_str());
+            ImGui::TextWrapped("下载没有成功：%s。", pr.error.c_str());
             ImGui::PopStyleColor();
         }
         ImGui::Dummy(ImVec2(0, S(2)));
         if (!st.notes.empty()) {   // the release's own notes (GitHub's), as plain text, in a box of their own
-            ImGui::Text("What's new in %s:", st.latest.c_str());
+            ImGui::Text("%s 更新内容：", st.latest.c_str());
             ImGui::BeginChild("##notes", ImVec2(0, ImGui::GetTextLineHeightWithSpacing() * 12.0f), ImGuiChildFlags_Borders);
             ImGui::PushTextWrapPos(0.0f);
             ImGui::TextUnformatted(st.notes.c_str());
             ImGui::PopTextWrapPos();
             ImGui::EndChild();
         }
-        if (ImGui::SmallButton(st.notes.empty() ? "What's new" : "The release page")) ShellExecuteA(nullptr, "open", st.url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
-        if (st.notes.empty()) { ImGui::SameLine(); ImGui::TextDisabled("(the release page)"); }
+        if (ImGui::SmallButton(st.notes.empty() ? "更新内容" : "发布页面")) ShellExecuteA(nullptr, "open", st.url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+        if (st.notes.empty()) { ImGui::SameLine(); ImGui::TextDisabled("（发布页面）"); }
         ImGui::Dummy(ImVec2(0, S(6)));
         const bool canDownload = !st.zipUrl.empty() && !st.zipSha256.empty();   // (a download GitHub lists no SHA-256 for is refused by the updater)
         if (!canDownload) ImGui::BeginDisabled();
-        if (ui::Button("Download and install", ui::icons::kDownload, ui::ButtonKind::Primary)) { update::ForgetDownload(); update::StartDownload(st); }
+        if (ui::Button("下载并安装", ui::icons::kDownload, ui::ButtonKind::Primary)) { update::ForgetDownload(); update::StartDownload(st); }
         if (!canDownload) ImGui::EndDisabled();
         ImGui::SameLine();
-        if (ui::Button("Not now", ui::icons::kClose)) close();
+        if (ui::Button("暂不", ui::icons::kClose)) close();
         ImGui::SameLine();
-        if (ui::Button("Don't ask again for this release")) { update::Skip(st.latest); close(); }
-        if (!canDownload) Wrapped(st.zipUrl.empty() ? "This release has no download attached: use its page." : "GitHub lists no checksum for this download, so it cannot be checked here: use the release page.", true);
+        if (ui::Button("此版本不再询问")) { update::Skip(st.latest); close(); }
+        if (!canDownload) Wrapped(st.zipUrl.empty() ? "该版本未附带下载文件：请前往它的发布页面。" : "GitHub 未给出此下载的校验和，这里无法校验：请前往发布页面。", true);
     }
     ImGui::PopTextWrapPos();
     ImGui::EndPopup();

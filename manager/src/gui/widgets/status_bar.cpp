@@ -20,7 +20,7 @@ void StatusBar(const std::string& left) {
     dl->AddLine(ImVec2(origin.x, origin.y), ImVec2(origin.x + w, origin.y), eam::ui::theme::U(eam::ui::theme::kBorder), 1.0f);
 
     // right: donate <heart> ko-fi
-    const char* a = "donate";
+    const char* a = "捐赠";
     const char* b = "ko-fi";
     const float ico = ImGui::GetFontSize() * 0.95f, gap = ImGui::GetFontSize() * 0.4f;
     const float cw = ImGui::CalcTextSize(a).x + gap + ico + gap + ImGui::CalcTextSize(b).x;
@@ -30,7 +30,7 @@ void StatusBar(const std::string& left) {
     const bool clicked = ImGui::InvisibleButton("##kofi", ImVec2(cw + padX * 2.0f, h - 1.0f));
     const bool hovered = ImGui::IsItemHovered();
     if (clicked) OpenKofi();
-    if (hovered) ImGui::SetTooltip("Support development on Ko-fi (opens your browser)");
+    if (hovered) ImGui::SetTooltip("在 Ko-fi 上支持开发（将打开浏览器）");
     const ImU32 txt = eam::ui::theme::U(hovered ? eam::ui::theme::kText : eam::ui::theme::kMuted);
     float x = bp.x + padX;
     const float ty = bp.y + (h - 1.0f - ImGui::GetTextLineHeight()) * 0.5f;

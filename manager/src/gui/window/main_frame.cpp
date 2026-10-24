@@ -36,21 +36,21 @@ std::string BuildStatusLine(AddonManager* manager) {
 void RenderTabs(AddonManager* manager, bool& bringAddonsForward) {
     if (!ImGui::BeginTabBar("##MainTabs", ImGuiTabBarFlags_None)) return;
 
-    if (ImGui::BeginTabItem("Addons", nullptr, bringAddonsForward ? ImGuiTabItemFlags_SetSelected : 0)) {
+    if (ImGui::BeginTabItem("插件", nullptr, bringAddonsForward ? ImGuiTabItemFlags_SetSelected : 0)) {
         bringAddonsForward = false;
         ImGui::Dummy(ImVec2(0, 5));
         RenderTabAddons(manager);
         ImGui::EndTabItem();
     }
-    if (ImGui::BeginTabItem("Features")) { RenderTabFeatures(); ImGui::EndTabItem(); }
-    if (ImGui::BeginTabItem("Performance")) { RenderTabPerformance(); ImGui::EndTabItem(); }
-    if (ImGui::BeginTabItem("Settings")) { RenderTabSettings(manager); ImGui::EndTabItem(); }
-    if (ImGui::BeginTabItem("Logs")) {
+    if (ImGui::BeginTabItem("功能")) { RenderTabFeatures(); ImGui::EndTabItem(); }
+    if (ImGui::BeginTabItem("性能")) { RenderTabPerformance(); ImGui::EndTabItem(); }
+    if (ImGui::BeginTabItem("设置")) { RenderTabSettings(manager); ImGui::EndTabItem(); }
+    if (ImGui::BeginTabItem("日志")) {
         ImGui::Dummy(ImVec2(0, 5));
         RenderTabLogs();
         ImGui::EndTabItem();
     }
-    if (ImGui::BeginTabItem("About")) { RenderTabAbout(); ImGui::EndTabItem(); }
+    if (ImGui::BeginTabItem("关于")) { RenderTabAbout(); ImGui::EndTabItem(); }
     ImGui::EndTabBar();
 }
 

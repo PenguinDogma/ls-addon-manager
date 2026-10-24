@@ -18,7 +18,7 @@ static bool Pick(bool save, const wchar_t* title, const wchar_t* defaultName, co
         DWORD opts = 0; dlg->GetOptions(&opts);
         dlg->SetOptions(opts | FOS_FORCEFILESYSTEM | (save ? FOS_OVERWRITEPROMPT : FOS_FILEMUSTEXIST));
         if (title) dlg->SetTitle(title);
-        if (filterSpec) { COMDLG_FILTERSPEC f[2] = { { filterName ? filterName : L"Files", filterSpec }, { L"All files", L"*.*" } }; dlg->SetFileTypes(2, f); }
+        if (filterSpec) { COMDLG_FILTERSPEC f[2] = { { filterName ? filterName : L"文件", filterSpec }, { L"所有文件", L"*.*" } }; dlg->SetFileTypes(2, f); }
         if (save && defaultName) dlg->SetFileName(defaultName);
         if (save && filterSpec && filterSpec[0] == L'*' && filterSpec[1] == L'.' && filterSpec[2] && !wcspbrk(filterSpec + 2, L"*?;")) dlg->SetDefaultExtension(filterSpec + 2);   // "*.json" gives "json"
         if (SUCCEEDED(dlg->Show(GetActiveWindow()))) {

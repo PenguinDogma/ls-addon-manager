@@ -32,11 +32,11 @@ struct Chip { const char* text = nullptr; ImU32 colour = 0; };
 
 Chip ChipFor(const AddonInfo& a) {
     using namespace eam::ui::theme;
-    if (a.manifest.wip) return { "WIP", U(kWarn) };
-    if (a.faulted) return { "ERROR", kChipRed };
-    if (a.security == SecurityVerdict::Tampered) return { "TAMPERED", kChipRed };
-    if (a.OlderBuild(EAM_VERSION_STRING)) return { "OLD BUILD", U(kWarn) };   // (its DLL is older than the manager: see the addon's page)
-    if (a.enabled && !a.IsLoaded()) return { a.RequiresRestart() ? "RESTART TO APPLY" : "NOT LOADED", U(kWarn) };
+    if (a.manifest.wip) return { "开发中", U(kWarn) };
+    if (a.faulted) return { "错误", kChipRed };
+    if (a.security == SecurityVerdict::Tampered) return { "已篡改", kChipRed };
+    if (a.OlderBuild(EAM_VERSION_STRING)) return { "旧版本", U(kWarn) };   // (its DLL is older than the manager: see the addon's page)
+    if (a.enabled && !a.IsLoaded()) return { a.RequiresRestart() ? "重启后生效" : "未加载", U(kWarn) };
     return {};
 }
 
@@ -85,12 +85,12 @@ namespace {
 
 std::string SwitchTooltip(const AddonInfo& a) {
     std::string tip = a.GetDisplayName() + "\n\n";
-    tip += a.manifest.description.empty() ? std::string("No description.") : a.manifest.description;
+    tip += a.manifest.description.empty() ? std::string("暂无描述。") : a.manifest.description;
     tip += "\n\n";
-    if (a.manifest.wip) tip += "Work in progress: it cannot be switched on yet.";
-    else tip += a.enabled ? "On: switch it off to stop using this addon." : "Off: switch it on to use this addon.";
-    if (a.RequiresRestart()) tip += "\nChanging this takes effect the next time Lossless Scaling starts.";
-    if (a.OlderBuild(EAM_VERSION_STRING)) tip += "\n\nIts file is version " + a.dllVersion + ", older than the manager (" EAM_VERSION_STRING "): a test build or an old file. Close Lossless Scaling and run Setup (Reinstall) to put the release's file back.";
+    if (a.manifest.wip) tip += "开发中：此插件暂无法开启。";
+    else tip += a.enabled ? "已开启：关闭开关即可停用此插件。" : "已关闭：打开开关即可使用此插件。";
+    if (a.RequiresRestart()) tip += "\n此更改在下次启动 Lossless Scaling 时生效。";
+    if (a.OlderBuild(EAM_VERSION_STRING)) tip += "\n\n它的文件版本是 " + a.dllVersion + "，低于管理器的版本（" EAM_VERSION_STRING "）：可能是测试版或旧文件。请关闭 Lossless Scaling 并运行安装程序（重新安装），以恢复正式发布的文件。";
     return tip;
 }
 

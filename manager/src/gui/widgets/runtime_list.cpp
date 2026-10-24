@@ -33,7 +33,7 @@ RuntimeAction RuntimeListAtBottom(const std::vector<RuntimeFile>& rows, int open
     const float top = ImGui::GetCursorPosY();
     ImGui::PushStyleColor(ImGuiCol_Separator, th::V(th::kBorder)); ImGui::Separator(); ImGui::PopStyleColor();
     ImGui::Dummy(ImVec2(0, ImGui::GetFontSize() * 0.2f));
-    ui::SectionLabel("Runtimes");
+    ui::SectionLabel("运行时");
     ImGui::PushID("##runtimes");   // its lines are numbered from 0 like the addon cards above them in the same window: their own ID scope
     ImGui::Dummy(ImVec2(0, ImGui::GetFontSize() * 0.15f));
     for (int i = 0; i < (int)rows.size(); ++i) {
@@ -54,10 +54,10 @@ RuntimeAction RuntimeListAtBottom(const std::vector<RuntimeFile>& rows, int open
         const char* glyph = r.loaded ? ui::icons::kCheck : waiting ? ui::icons::kCircle : ui::icons::kClose;
         const ImU32 tint = r.loaded ? th::U(th::kAccent, a) : th::U(th::kMuted, a);
         std::string note;
-        if (!r.exists) note = "not found";
+        if (!r.exists) note = "未找到";
         else if (!r.read) note = "...";
-        else if (r.signature == RuntimeFile::Signature::Broken) note = "modified";
-        else if (r.signature != RuntimeFile::Signature::Signed) note = "unsigned";
+        else if (r.signature == RuntimeFile::Signature::Broken) note = "已修改";
+        else if (r.signature != RuntimeFile::Signature::Signed) note = "未签名";
         ui::svg::Draw(dl, glyph, ImVec2(p.x + 2.0f, p.y + (h - ico) * 0.5f), ico, tint, 2.0f);
         float x = p.x + ico + ImGui::GetFontSize() * 0.55f;
         const float ty = p.y + (h - ImGui::GetFontSize()) * 0.5f, right = p.x + w - buttons - 4.0f;
@@ -74,20 +74,20 @@ RuntimeAction RuntimeListAtBottom(const std::vector<RuntimeFile>& rows, int open
         if (hovered) {
             ImGui::BeginTooltip();
             ImGui::PushTextWrapPos(ImGui::GetFontSize() * 32.0f);
-            ImGui::Text("%s runtime, used by %s (%s)", r.label.c_str(), r.addonName.c_str(), r.addonOn ? "on" : "off");
-            if (r.loaded) ImGui::TextColored(th::V(th::kAccent), "Loaded now");
-            else if (waiting) ImGui::TextDisabled("Ready: it loads when Lossless Scaling scales a game with %s on", r.addonName.c_str());
-            else if (!r.exists) ImGui::TextDisabled("Not loaded: the file is not there");
-            else ImGui::TextDisabled("Not loaded: %s is off", r.addonName.c_str());
-            if (!r.exists) ImGui::Text("Not found: %s", Utf8(r.path).c_str());
-            else if (!r.read) ImGui::TextDisabled("Reading the file...");
+            ImGui::Text("%s 运行时，由 %s 使用（%s）", r.label.c_str(), r.addonName.c_str(), r.addonOn ? "开" : "关");
+            if (r.loaded) ImGui::TextColored(th::V(th::kAccent), "当前已加载");
+            else if (waiting) ImGui::TextDisabled("就绪：开启 %s 后，Lossless Scaling 缩放游戏时会自动加载", r.addonName.c_str());
+            else if (!r.exists) ImGui::TextDisabled("未加载：文件不存在");
+            else ImGui::TextDisabled("未加载：%s 未开启", r.addonName.c_str());
+            if (!r.exists) ImGui::Text("未找到：%s", Utf8(r.path).c_str());
+            else if (!r.read) ImGui::TextDisabled("正在读取文件…");
             else {
                 if (!r.description.empty() || !r.version.empty()) ImGui::TextUnformatted((r.description + (r.description.empty() ? "" : "  ") + r.version).c_str());
-                if (r.signature == RuntimeFile::Signature::Signed) ImGui::Text("Signed by %s", r.signer.empty() ? "its maker" : r.signer.c_str());
+                if (r.signature == RuntimeFile::Signature::Signed) ImGui::Text("签名者：%s", r.signer.empty() ? "其开发商" : r.signer.c_str());
                 else if (r.signature == RuntimeFile::Signature::Broken)
-                    ImGui::Text("Modified: signed by %s, then changed, so the signature no longer matches the file", r.signer.empty() ? "its maker" : r.signer.c_str());
-                else ImGui::Text("Not signed%s", r.company.empty() ? "" : (" (it says it is " + r.company + "'s)").c_str());
-                if (r.shippedKnown) ImGui::TextDisabled(r.shipped ? "The file the addon ships with." : "Not the file the addon ships with.");
+                    ImGui::Text("已修改：由 %s 签名后文件被改动，签名与文件不再相符", r.signer.empty() ? "其开发商" : r.signer.c_str());
+                else ImGui::Text("未签名%s", r.company.empty() ? "" : ("（自称来自 " + r.company + "）").c_str());
+                if (r.shippedKnown) ImGui::TextDisabled(r.shipped ? "插件自带的文件。" : "并非插件自带的文件。");
                 ImGui::TextDisabled("%s", Utf8(r.path).c_str());
                 if (!r.sha256.empty()) ImGui::TextDisabled("SHA-256 %s", r.sha256.c_str());
             }
@@ -98,30 +98,30 @@ RuntimeAction RuntimeListAtBottom(const std::vector<RuntimeFile>& rows, int open
         // + : the files there are for it, one click to switch, and adding one
         ImGui::SameLine(0, 0);
         if (ui::IconButton("##choose", ui::icons::kPlus, h)) { action = { i, RuntimeAction::Choose }; ImGui::OpenPopup("##files"); }
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort)) ImGui::SetTooltip("Switch %s file", r.label.c_str());
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort)) ImGui::SetTooltip("切换 %s 文件", r.label.c_str());
         if (i == openMenu && !ImGui::IsPopupOpen("##files")) ImGui::OpenPopup("##files");
         // the menu opens beside the list, its bottom at this line (not wherever the pointer is)
         ImGui::SetNextWindowPos(ImVec2(p.x + w + ImGui::GetStyle().ItemSpacing.x, p.y + h), ImGuiCond_Appearing, ImVec2(0.0f, 1.0f));
         if (ImGui::BeginPopup("##files")) {
-            ui::SectionLabel((r.label + " file").c_str());
+            ui::SectionLabel((r.label + " 文件").c_str());
             ImGui::Dummy(ImVec2(0, ImGui::GetFontSize() * 0.2f));
             auto line = [&](const RuntimeFile& f, const std::string& name) {
                 std::string text = name;
                 const std::string v = f.exists && f.read ? f.ShownVersion() : std::string();
                 if (!v.empty()) text += "  " + v;
-                if (!f.exists) text += "  (missing)";
-                else if (f.read && f.signature == RuntimeFile::Signature::Broken) text += "  modified";
-                else if (f.read && f.signature != RuntimeFile::Signature::Signed) text += "  unsigned";
+                if (!f.exists) text += "  （缺失）";
+                else if (f.read && f.signature == RuntimeFile::Signature::Broken) text += "  已修改";
+                else if (f.read && f.signature != RuntimeFile::Signature::Signed) text += "  未签名";
                 return text;
             };
             const bool usingDefault = r.usingDefault;
             // the default first: always there, so there is always a way back
             {
                 const RuntimeFile def = DescribeRuntimeFile(r.defaultPath, r);
-                if (ImGui::Selectable(line(def, r.shippedKnown ? "Shipped" : "Default").c_str(), usingDefault)
+                if (ImGui::Selectable(line(def, r.shippedKnown ? "自带" : "默认").c_str(), usingDefault)
                     && !usingDefault) {
                     UseRuntimeFile(r, L"");
-                    ToastShow(r.label + ": back to the " + (r.shippedKnown ? "shipped" : "default") + " file", ToastType::Success, 4.0f);
+                    ToastShow(r.label + "：已恢复" + (r.shippedKnown ? "自带" : "默认") + "文件", ToastType::Success, 4.0f);
                 }
             }
             const std::vector<std::wstring> library = RuntimeLibrary(r);
@@ -131,38 +131,38 @@ RuntimeAction RuntimeListAtBottom(const std::vector<RuntimeFile>& rows, int open
                 const bool current = !usingDefault && _wcsicmp(library[k].c_str(), r.path.c_str()) == 0;
                 const float trash = ImGui::GetFrameHeight();
                 const std::string title = RuntimeFileTitle(library[k]);
-                if (ImGui::Selectable((title.empty() ? line(f, r.label) : title + (f.read && f.signature == RuntimeFile::Signature::Signed ? "" : "  unsigned")).c_str(), current,
+                if (ImGui::Selectable((title.empty() ? line(f, r.label) : title + (f.read && f.signature == RuntimeFile::Signature::Signed ? "" : "  未签名")).c_str(), current,
                                       ImGuiSelectableFlags_DontClosePopups, ImVec2(ImGui::GetFontSize() * 16.0f, 0)) && !current) {
                     UseRuntimeFile(r, library[k]);
-                    ToastShow(r.label + ": switched to " + (f.ShownVersion().empty() ? std::string("the new file") : f.ShownVersion()), ToastType::Success, 4.0f);
+                    ToastShow(r.label + "：已切换到 " + (f.ShownVersion().empty() ? std::string("新文件") : f.ShownVersion()), ToastType::Success, 4.0f);
                     ImGui::CloseCurrentPopup();
                 }
                 if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort)) {
                     ImGui::BeginTooltip();
                     if (!f.description.empty()) ImGui::TextUnformatted((f.description + "  " + f.version).c_str());
-                    if (f.signature == RuntimeFile::Signature::Signed) ImGui::Text("Signed by %s", f.signer.c_str()); else ImGui::TextUnformatted(f.signature == RuntimeFile::Signature::Broken ? "Modified after signing" : "Not signed");
+                    if (f.signature == RuntimeFile::Signature::Signed) ImGui::Text("签名者：%s", f.signer.c_str()); else ImGui::TextUnformatted(f.signature == RuntimeFile::Signature::Broken ? "签名后已被修改" : "未签名");
                     if (!f.sha256.empty()) ImGui::TextDisabled("SHA-256 %s", f.sha256.c_str());
                     ImGui::EndTooltip();
                 }
                 ImGui::SameLine();
                 if (ui::IconButton("##remove", ui::icons::kTrash, trash)) {
                     std::string error;
-                    if (RemoveRuntimeFile(r, library[k], error)) ToastShow(r.label + ": file removed (moved to runtimes\\.removed)", ToastType::Info, 4.0f);
+                    if (RemoveRuntimeFile(r, library[k], error)) ToastShow(r.label + "：文件已移除（移到了 runtimes\\.removed）", ToastType::Info, 4.0f);
                     else ToastShow(error, ToastType::Warning, 5.0f);
                 }
-                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort)) ImGui::SetTooltip("Remove it from this list");
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort)) ImGui::SetTooltip("从此列表中移除");
                 ImGui::PopID();
             }
             ImGui::Separator();
-            if (ImGui::Selectable("+  Add a file...")) {
+            if (ImGui::Selectable("+  添加文件…")) {
                 std::wstring picked;
-                const std::wstring title = L"Choose a " + std::wstring(r.label.begin(), r.label.end()) + L" file";
-                if (PickOpenFile(title.c_str(), L"DLL files", L"*.dll", picked)) {
+                const std::wstring title = L"选择 " + std::wstring(r.label.begin(), r.label.end()) + L" 文件";
+                if (PickOpenFile(title.c_str(), L"DLL 文件", L"*.dll", picked)) {
                     std::wstring added; std::string error;
                     if (AddRuntimeFile(r, picked, added, error)) {
                         UseRuntimeFile(r, added);
                         const RuntimeFile f = DescribeRuntimeFile(added, r);
-                        ToastShow(r.label + ": added and switched" + (f.ShownVersion().empty() ? std::string() : " to " + f.ShownVersion()), ToastType::Success, 4.0f);
+                        ToastShow(r.label + "：已添加并切换" + (f.ShownVersion().empty() ? std::string() : "到 " + f.ShownVersion()), ToastType::Success, 4.0f);
                     } else ToastShow(error, ToastType::Warning, 6.0f);
                 }
             }
