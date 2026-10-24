@@ -57,21 +57,21 @@ void DrawPanel() {
     // status
     std::string status = Status(), frameInfo, adapterName; bool hasDisplay;
     { std::lock_guard<std::mutex> lk(g_textMutex); frameInfo = g_frameText.empty() ? g_frameText : g_frameText + " (" + g_encodingText + ")"; adapterName = g_cardName; hasDisplay = g_cardDrivesDisplay; }
-    Block("Status", true);
+    Block("状态", true);
     if (g_off) {
         std::string why; { std::lock_guard<std::mutex> lock(g_textMutex); why = g_offReason; }
-        ImGui::PushStyleColor(ImGuiCol_Text, eam::ui::theme::V(eam::ui::theme::kDanger)); ImGui::Text("DISABLED: %s", why.c_str()); ImGui::PopStyleColor();
-        ImGui::SameLine(); if (ImGui::SmallButton("Re-arm")) SwitchOn();
-        Tip("Turn it back on after it switched itself off. If it switches off again, the reason above is still true.");
+        ImGui::PushStyleColor(ImGuiCol_Text, eam::ui::theme::V(eam::ui::theme::kDanger)); ImGui::Text("已禁用：%s", why.c_str()); ImGui::PopStyleColor();
+        ImGui::SameLine(); if (ImGui::SmallButton("重新启用")) SwitchOn();
+        Tip("它自动关闭后，用它重新打开。如果再次自动关闭，说明上面的原因依然存在。");
     }
     else { ImGui::PushStyleColor(ImGuiCol_Text, g_runs ? eam::ui::theme::V(eam::ui::theme::kAccent) : eam::ui::theme::V(eam::ui::theme::kWarn)); ImGui::Text("%s", status.c_str()); ImGui::PopStyleColor(); }
-    if (g_engine.IsFailed()) { ImGui::TextColored(eam::ui::theme::V(eam::ui::theme::kDanger), "engine: %s", g_engine.Stats().lastError); ImGui::SameLine(); if (ImGui::SmallButton("Retry engine")) RestartEngine(); Tip("Try to start the DLSS model again on the current graphics card."); }
+    if (g_engine.IsFailed()) { ImGui::TextColored(eam::ui::theme::V(eam::ui::theme::kDanger), "引擎：%s", g_engine.Stats().lastError); ImGui::SameLine(); if (ImGui::SmallButton("重试引擎")) RestartEngine(); Tip("尝试在当前显卡上重新启动 DLSS 模型。"); }
     if (!g_off) {   // ---- what stands out in the last few seconds (diagnosis.h), in plain words
         std::vector<nr::diag::Finding> findings; { std::lock_guard<std::mutex> lk(g_textMutex); findings = g_findings; }
         if (!findings.empty()) {
             ImGui::Dummy(ImVec2(0, ImGui::GetFontSize() * 0.25f));
-            ImGui::TextDisabled("What stands out");
-            Tip("Worked out from the last few seconds of this session: how even the game's frames are, what the model waited for, what auto quality did. It updates about every five seconds.");
+            ImGui::TextDisabled("值得关注");
+            Tip("根据本次会话最近几秒的情况得出：游戏帧的均匀程度、模型在等待什么、自动画质做了什么。大约每五秒更新一次。");
             for (const auto& f : findings) {
                 const ImVec4 col = f.level == nr::diag::Level::Problem ? eam::ui::theme::V(eam::ui::theme::kDanger) : (f.level == nr::diag::Level::Note ? eam::ui::theme::V(eam::ui::theme::kWarn) : ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
                 ImGui::PushStyleColor(ImGuiCol_Text, col); ImGui::TextWrapped("%s", f.what.c_str()); ImGui::PopStyleColor();
@@ -82,93 +82,93 @@ void DrawPanel() {
     if (!kScalerAddon) {   // ---- Requirements: what this needs, what was found, and what to do about anything missing
         const bool have = RequirementsScanned();
         const req::Report rep = Requirements({ g_engine.IsFailed(), g_engine.IsReady(), g_runs > 0, g_engine.Stats().lastError });
-        Block("Requirements");
-        ImGui::TextWrapped("You provide the model file yourself: nvngx_dlssnr.dll is not included with this addon and is never downloaded.");
+        Block("需求");
+        ImGui::TextWrapped("模型文件需要自行提供：nvngx_dlssnr.dll 不随本插件附带，也永远不会被自动下载。");
         ImGui::Dummy(ImVec2(0, ImGui::GetFontSize() * 0.25f));
-        Note("1. Put your copy of nvngx_dlssnr.dll in the Lossless Scaling folder, next to LosslessScaling.exe. The Browse button below copies it there for you.");
-        Note("2. Press Test compatibility to check that it works on your graphics card.");
-        Note("3. Turn on Enable below, then start your game and scale it as usual.");
+        Note("1. 把你的 nvngx_dlssnr.dll 放进 Lossless Scaling 文件夹，与 LosslessScaling.exe 同目录。下方的浏览按钮会帮你复制过去。");
+        Note("2. 按下测试兼容性，检查它在你的显卡上能否正常工作。");
+        Note("3. 打开下方的启用开关，然后启动游戏并照常缩放。");
         ImGui::Dummy(ImVec2(0, ImGui::GetFontSize() * 0.4f));
         // the verdict, in one line
-        if (!have) ImGui::TextDisabled("Checking...");
-        else if (rep.overall == req::Level::Missing) { ImGui::PushStyleColor(ImGuiCol_Text, eam::ui::theme::V(eam::ui::theme::kDanger)); ImGui::TextWrapped("Not ready yet. %s", rep.headline.c_str()); ImGui::PopStyleColor(); }
-        else if (rep.overall == req::Level::Note) { ImGui::PushStyleColor(ImGuiCol_Text, eam::ui::theme::V(eam::ui::theme::kWarn)); ImGui::TextWrapped("Ready, with a note. %s", rep.headline.c_str()); ImGui::PopStyleColor(); }
-        else { ImGui::TextColored(eam::ui::theme::V(eam::ui::theme::kAccent), "Everything is in place."); }
+        if (!have) ImGui::TextDisabled("正在检查...");
+        else if (rep.overall == req::Level::Missing) { ImGui::PushStyleColor(ImGuiCol_Text, eam::ui::theme::V(eam::ui::theme::kDanger)); ImGui::TextWrapped("尚未就绪。%s", rep.headline.c_str()); ImGui::PopStyleColor(); }
+        else if (rep.overall == req::Level::Note) { ImGui::PushStyleColor(ImGuiCol_Text, eam::ui::theme::V(eam::ui::theme::kWarn)); ImGui::TextWrapped("已就绪，但有一点需要注意。%s", rep.headline.c_str()); ImGui::PopStyleColor(); }
+        else { ImGui::TextColored(eam::ui::theme::V(eam::ui::theme::kAccent), "一切就绪。"); }
         ImGui::Dummy(ImVec2(0, ImGui::GetFontSize() * 0.3f));
         {   // (always open)
             for (const auto& row : rep.rows) {
                 const ImVec4 col = row.level == req::Level::Ok ? eam::ui::theme::V(eam::ui::theme::kAccent) : (row.level == req::Level::Note ? eam::ui::theme::V(eam::ui::theme::kWarn) : eam::ui::theme::V(eam::ui::theme::kDanger));
-                ImGui::TextColored(col, row.level == req::Level::Ok ? "OK     " : (row.level == req::Level::Note ? "NOTE   " : "MISSING"));
+                ImGui::TextColored(col, row.level == req::Level::Ok ? "正常   " : (row.level == req::Level::Note ? "注意   " : "缺失   "));
                 ImGui::SameLine(ImGui::GetFontSize() * 5.2f); ImGui::Text("%s", row.label.c_str()); ImGui::SameLine(ImGui::GetFontSize() * 13.0f); ImGui::TextWrapped("%s", row.value.c_str());
                 if (!row.hint.empty()) { ImGui::Indent(ImGui::GetFontSize() * 1.7f); ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled)); ImGui::TextWrapped("%s", row.hint.c_str()); ImGui::PopStyleColor(); ImGui::Unindent(ImGui::GetFontSize() * 1.7f); }
             }
             ImGui::Dummy(ImVec2(0, ImGui::GetFontSize() * 0.4f));
             const bool placing = Browsing();
             if (placing) ImGui::BeginDisabled();
-            if (ImGui::SmallButton(placing ? "Waiting for the file dialog..." : "Browse for the model file...")) BrowseForModel();
+            if (ImGui::SmallButton(placing ? "正在等待文件对话框..." : "浏览模型文件...")) BrowseForModel();
             if (placing) ImGui::EndDisabled();
-            Tip("Pick your own copy of nvngx_dlssnr.dll: it is copied into the Lossless Scaling folder. A file already there is moved to the backups folder, never deleted. Nothing is downloaded.");
+            Tip("选择你自己的 nvngx_dlssnr.dll：它会被复制到 Lossless Scaling 文件夹。已存在的同名文件会移到备份文件夹，绝不会删除。不会下载任何东西。");
             ImGui::SameLine();
             const bool testing = SelfTesting();
             if (testing) ImGui::BeginDisabled();
-            if (ImGui::SmallButton(testing ? "Testing..." : "Test compatibility")) RunSelfTest();
+            if (ImGui::SmallButton(testing ? "正在测试..." : "测试兼容性")) RunSelfTest();
             if (testing) ImGui::EndDisabled();
-            Tip("Runs the model file once, in a separate program, on your graphics card, and says whether it works there. It uses the graphics card for a few seconds, so do it before you start a game. It cannot take Lossless Scaling down if the model misbehaves.");
+            Tip("在独立程序中、于你的显卡上运行一次模型文件，并告知它能否正常工作。会占用显卡几秒钟，请在启动游戏前进行。即使模型表现异常，也不会影响 Lossless Scaling 运行。");
             ImGui::Dummy(ImVec2(0, ImGui::GetFontSize() * 0.15f));
-            if (ImGui::SmallButton("Open the Lossless Scaling folder")) ShellExecuteW(nullptr, L"open", g_lsDir.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
-            Tip("Where the model file, nvngx_dlssnr.dll, goes: next to LosslessScaling.exe.");
+            if (ImGui::SmallButton("打开 Lossless Scaling 文件夹")) ShellExecuteW(nullptr, L"open", g_lsDir.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+            Tip("模型文件 nvngx_dlssnr.dll 的存放位置：LosslessScaling.exe 旁边。");
             ImGui::SameLine();
-            if (ImGui::SmallButton("Check again")) ScanRequirements();
-            Tip("Look again at the graphics card, the NVIDIA driver, the model file and the helper DLL. Use it after putting a file in place.");
+            if (ImGui::SmallButton("重新检查")) ScanRequirements();
+            Tip("重新检查显卡、NVIDIA 驱动、模型文件和辅助 DLL。放入文件后使用。");
             const std::wstring reportFile = g_addonDir + L"\\compatibility_report.txt";
             if (GetFileAttributesW(reportFile.c_str()) != INVALID_FILE_ATTRIBUTES) {
                 ImGui::SameLine();
-                if (ImGui::SmallButton("Open the compatibility report")) ShellExecuteW(nullptr, L"open", reportFile.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
-                Tip("A short text file about the last compatibility test: your graphics card, driver, Windows, the model file's name, version and size, and the result. Paste it into an issue or the compatibility table. It holds no folders or user name; the model file shows as its name, version, size and the first 16 digits of its hash (which tells two builds that are called the same apart), and a failure adds what NVIDIA's code said.");
+                if (ImGui::SmallButton("打开兼容性报告")) ShellExecuteW(nullptr, L"open", reportFile.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+                Tip("关于上次兼容性测试的简短文本：包含你的显卡、驱动、Windows、模型文件的名称、版本和大小，以及结果。可粘贴到 issue 或兼容性表格中。其中不含文件夹或用户名；模型文件只显示名称、版本、大小和哈希前 16 位（用于区分同名的不同构建），失败时还会附上 NVIDIA 代码返回的信息。");
                 ImGui::SameLine();
-                if (ImGui::SmallButton("Copy the report")) {
+                if (ImGui::SmallButton("复制报告")) {
                     FILE* rf = nullptr; std::string text;
                     if (_wfopen_s(&rf, reportFile.c_str(), L"rb") == 0 && rf) { char buf[4096]; size_t n; while ((n = fread(buf, 1, sizeof buf, rf)) > 0) text.append(buf, n); fclose(rf); }
                     if (!text.empty()) ImGui::SetClipboardText(text.c_str());
                 }
-                Tip("Copies the compatibility report to the clipboard, ready to paste into an issue.");
+                Tip("将兼容性报告复制到剪贴板，可直接粘贴到 issue 中。");
             }
             { bool ok; const std::string msg = BrowseResult(ok);
               if (!msg.empty()) { ImGui::PushStyleColor(ImGuiCol_Text, ok ? eam::ui::theme::V(eam::ui::theme::kAccent) : eam::ui::theme::V(eam::ui::theme::kWarn)); ImGui::TextWrapped("%s", msg.c_str()); ImGui::PopStyleColor(); } }
         }
     }
     else if (kXessScaler) {   // ---- XeSS's requirements: a DirectX 12 card with Shader Model 6.4, and Intel's runtime, which ships in the addon's xess folder
-        Block("Requirements");
+        Block("需求");
         const std::wstring runtime = g_addonDir + L"\\xess\\libxess.dll";
         const bool present = GetFileAttributesW(runtime.c_str()) != INVALID_FILE_ATTRIBUTES;
-        if (present) ImGui::TextColored(eam::ui::theme::V(eam::ui::theme::kAccent), "Intel's XeSS runtime is in place (it comes with this addon).");
-        else ImGui::TextColored(eam::ui::theme::V(eam::ui::theme::kDanger), "Intel's XeSS runtime is missing: the addon's xess folder should hold libxess.dll. Reinstall the addon.");
-        Note("Works on any graphics card with DirectX 12 and Shader Model 6.4 (Intel Arc, NVIDIA or AMD); on Intel Arc it runs on the card's XMX units. In Lossless Scaling "
-             "choose NIS as the Scaling Type (XeSS takes the place of that pass), and let the game run in a window smaller than your screen, for example 2560x1440 on a 4K "
-             "screen; at the screen's own size it anti-aliases instead. Frame generation can be on or off. Only one of the upscalers works at a time.");
+        if (present) ImGui::TextColored(eam::ui::theme::V(eam::ui::theme::kAccent), "Intel 的 XeSS 运行时已就位（随本插件附带）。");
+        else ImGui::TextColored(eam::ui::theme::V(eam::ui::theme::kDanger), "缺少 Intel 的 XeSS 运行时：插件的 xess 文件夹中应有 libxess.dll。请重新安装插件。");
+        Note("适用于任何支持 DirectX 12 和 Shader Model 6.4 的显卡（Intel Arc、NVIDIA 或 AMD）；在 Intel Arc 上会使用显卡的 XMX 单元运行。在 Lossless Scaling 中"
+             "选择 NIS 作为缩放类型（XeSS 接替该处理趟），并让游戏以小于屏幕的窗口运行，例如 4K 屏幕上用 2560x1440；"
+             "若窗口为屏幕原始大小，则会改为抗锯齿。帧生成可开可关。多个上采样器同时只能运行一个。");
     }
     else if (kFsrScaler) {   // ---- FSR's requirements: any DirectX 12 card, and AMD's runtime, which ships in the addon's fsr folder
-        Block("Requirements");
+        Block("需求");
         const std::wstring runtime = g_addonDir + L"\\fsr\\amd_fidelityfx_dx12.dll";
         const bool present = GetFileAttributesW(runtime.c_str()) != INVALID_FILE_ATTRIBUTES;
-        if (present) ImGui::TextColored(eam::ui::theme::V(eam::ui::theme::kAccent), "AMD's FSR runtime is in place (it comes with this addon).");
-        else ImGui::TextColored(eam::ui::theme::V(eam::ui::theme::kDanger), "AMD's FSR runtime is missing: the addon's fsr folder should hold amd_fidelityfx_dx12.dll. Reinstall the addon.");
-        Note("Works on any graphics card with DirectX 12 (AMD, NVIDIA or Intel). In Lossless Scaling choose NIS as the Scaling Type (FSR takes the place of that pass), "
-             "and let the game run in a window smaller than your screen, for example 2560x1440 on a 4K screen; at the screen's own size it anti-aliases instead. "
-             "Frame generation can be on or off. Only one of the upscalers (DLSS, FSR, XeSS) works at a time.");
+        if (present) ImGui::TextColored(eam::ui::theme::V(eam::ui::theme::kAccent), "AMD 的 FSR 运行时已就位（随本插件附带）。");
+        else ImGui::TextColored(eam::ui::theme::V(eam::ui::theme::kDanger), "缺少 AMD 的 FSR 运行时：插件的 fsr 文件夹中应有 amd_fidelityfx_dx12.dll。请重新安装插件。");
+        Note("适用于任何支持 DirectX 12 的显卡（AMD、NVIDIA 或 Intel）。在 Lossless Scaling 中选择 NIS 作为缩放类型（FSR 接替该处理趟），"
+             "并让游戏以小于屏幕的窗口运行，例如 4K 屏幕上用 2560x1440；若窗口为屏幕原始大小，则会改为抗锯齿。"
+             "帧生成可开可关。多个上采样器（DLSS、FSR、XeSS）同时只能运行一个。");
     }
     else {   // ---- DLAA's requirements: an NVIDIA RTX card, and NVIDIA's runtime, which ships in the addon's dlss folder
-        Block("Requirements");
+        Block("需求");
         const std::wstring runtime = g_addonDir + L"\\dlss\\nvngx_dlss.dll";
         const bool present = GetFileAttributesW(runtime.c_str()) != INVALID_FILE_ATTRIBUTES;
-        if (present) ImGui::TextColored(eam::ui::theme::V(eam::ui::theme::kAccent), "NVIDIA's DLSS runtime is in place (it comes with this addon).");
-        else ImGui::TextColored(eam::ui::theme::V(eam::ui::theme::kDanger), "NVIDIA's DLSS runtime is missing: the addon's dlss folder should hold nvngx_dlss.dll. Reinstall the addon.");
-        Note("Needs an NVIDIA RTX graphics card. In Lossless Scaling choose NIS as the Scaling Type (DLSS takes the place of that pass), and let the game run in a window "
-             "smaller than your screen so there is something to upscale, for example 2560x1440 on a 4K screen. Frame generation can be on or off: with it on, its motion is used.");
+        if (present) ImGui::TextColored(eam::ui::theme::V(eam::ui::theme::kAccent), "NVIDIA 的 DLSS 运行时已就位（随本插件附带）。");
+        else ImGui::TextColored(eam::ui::theme::V(eam::ui::theme::kDanger), "缺少 NVIDIA 的 DLSS 运行时：插件的 dlss 文件夹中应有 nvngx_dlss.dll。请重新安装插件。");
+        Note("需要 NVIDIA RTX 显卡。在 Lossless Scaling 中选择 NIS 作为缩放类型（DLSS 接替该处理趟），并让游戏以小于屏幕的窗口运行，"
+             "这样才有画面可供上采样，例如 4K 屏幕上用 2560x1440。帧生成可开可关：开启时会使用其运动估计。");
     }
     if (!kScalerAddon) {   // looks are Neural Rendering's
-    Block("Saved looks (load and save your settings)");
-    Note("A look is a saved set of the sliders below. Pick one from the list to load it. Save updates the look you picked; Save as new keeps the sliders as they are now under a name of your choice.");
+    Block("保存的方案（加载并保存你的设置）");
+    Note("方案是下方滑块的一组存档。从列表中选一个即可加载。保存会更新当前选中的方案；另存为新方案则以你指定的名称保存当前滑块设置。");
     ImGui::Dummy(ImVec2(0, ImGui::GetFontSize() * 0.3f));
     // ---- Saved looks. Pick one to apply it; Save updates it (or asks for a name); Save as new keeps the current sliders under a
     // ---- new name; Delete asks first. A look is the sliders below (model knobs, picture, HUD areas), not the hotkeys or advanced settings.
@@ -182,65 +182,65 @@ void DrawPanel() {
         for (auto& d : datas) { NrParams t = c.p; ApplyLook(d, t); d = LookToText(t); }
         if (s_active < 0) for (size_t i = 0; i < datas.size(); ++i) if (datas[i] == now) { s_active = (int)i; break; }   // recognise the look already in use
         const bool modified = s_active >= 0 && datas[s_active] != now;
-        const std::string label = s_active >= 0 ? names[s_active] + (modified ? "  (changed)" : "") : std::string("Custom");
+        const std::string label = s_active >= 0 ? names[s_active] + (modified ? "  （已修改）" : "") : std::string("自定义");
         ImGui::SetNextItemWidth(ImGui::GetFontSize() * 13.0f);
-        if (ImGui::BeginCombo("Saved look", label.c_str())) {
+        if (ImGui::BeginCombo("保存的方案", label.c_str())) {
             for (int i = 0; i < (int)names.size(); ++i)
                 if (ImGui::Selectable(names[i].c_str(), i == s_active)) {
                     const float was = c.p.workingScale;
                     if (ApplyLook(datas[i], c.p)) { changed = true; if (c.p.workingScale != was) createChanged = true; }
                     s_active = i;
                 }
-            if (names.empty()) ImGui::TextDisabled("No saved looks yet: set the sliders, then Save as new.");
+            if (names.empty()) ImGui::TextDisabled("还没有保存的方案：先调整滑块，再点击另存为新方案。");
             ImGui::EndCombo();
         }
-        Tip("Your saved looks: pick one to apply it. The Next preset hotkey cycles through them in the game. A look with a different Model resolution has the model made again in the background, which takes a fraction of a second.");
+        Tip("你保存的方案：选一个即可应用。游戏内可用下一个预设快捷键在各方案间循环切换。若方案的模型分辨率不同，模型会在后台重新构建，耗时不到一秒。");
         ImGui::SameLine();
-        if (eam::ui::Button("Save", eam::ui::icons::kSave, eam::ui::ButtonKind::Primary)) {
+        if (eam::ui::Button("保存", eam::ui::icons::kSave, eam::ui::ButtonKind::Primary)) {
             if (s_active >= 0) {
                 std::lock_guard<std::mutex> lk(g_settingsMutex);
                 if (s_active < (int)g_looks.size()) g_looks[s_active].data = now;
                 changed = true;
             } else { s_name[0] = 0; s_askSave = true; }
         }
-        Tip(s_active >= 0 ? "Update the selected look with the sliders as they are now." : "Keep the sliders as they are now as a new look: you are asked for a name.");
+        Tip(s_active >= 0 ? "用当前滑块设置更新选中的方案。" : "把当前滑块设置存为新方案：需要输入名称。");
         ImGui::SameLine();
-        if (eam::ui::Button("Save as new", eam::ui::icons::kPlus)) { s_name[0] = 0; s_askSave = true; }
-        Tip("Keep the current sliders under a new name. Using a name that already exists replaces that look.");
+        if (eam::ui::Button("另存为新方案", eam::ui::icons::kPlus)) { s_name[0] = 0; s_askSave = true; }
+        Tip("以新名称保存当前滑块设置。若名称已存在，会替换该方案。");
         ImGui::SameLine();   // always shown, so it can be found: greyed out until a look is picked
         if (s_active < 0) ImGui::BeginDisabled();
-        if (eam::ui::Button("Delete", eam::ui::icons::kTrash, eam::ui::ButtonKind::Danger)) s_askDelete = true;
+        if (eam::ui::Button("删除", eam::ui::icons::kTrash, eam::ui::ButtonKind::Danger)) s_askDelete = true;
         if (s_active < 0) ImGui::EndDisabled();
-        Tip(s_active >= 0 ? "Delete the selected look. Your current sliders are not changed." : "Pick a look in the list first, then this deletes it.");
-        if (s_askSave) { ImGui::OpenPopup("Save look"); s_askSave = false; }
-        if (ImGui::BeginPopupModal("Save look", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::TextUnformatted("Name for this look");
+        Tip(s_active >= 0 ? "删除选中的方案。当前滑块设置不会改变。" : "先在列表中选择一个方案，然后点击此项删除它。");
+        if (s_askSave) { ImGui::OpenPopup("保存方案"); s_askSave = false; }
+        if (ImGui::BeginPopupModal("保存方案", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::TextUnformatted("方案名称");
             if (ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere();
             const bool enter = ImGui::InputText("##lookname", s_name, sizeof s_name, ImGuiInputTextFlags_EnterReturnsTrue);
             ImGui::Dummy(ImVec2(0, 4));
             const std::string n = CleanName(s_name);
             const bool can = !n.empty();
             if (!can) ImGui::BeginDisabled();
-            if (eam::ui::Button("Save", eam::ui::icons::kCheck, eam::ui::ButtonKind::Primary) || (enter && can)) {
+            if (eam::ui::Button("保存", eam::ui::icons::kCheck, eam::ui::ButtonKind::Primary) || (enter && can)) {
                 { std::lock_guard<std::mutex> lk(g_settingsMutex); bool found = false; for (auto& pr : g_looks) if (pr.name == n) { pr.data = now; found = true; } if (!found) g_looks.push_back({ n, now }); }
                 s_active = -1; changed = true; ImGui::CloseCurrentPopup();
             }
             if (!can) ImGui::EndDisabled();
             ImGui::SameLine();
-            if (eam::ui::Button("Cancel", eam::ui::icons::kClose)) ImGui::CloseCurrentPopup();
+            if (eam::ui::Button("取消", eam::ui::icons::kClose)) ImGui::CloseCurrentPopup();
             ImGui::EndPopup();
         }
-        if (s_askDelete) { ImGui::OpenPopup("Delete look"); s_askDelete = false; }
-        if (ImGui::BeginPopupModal("Delete look", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::Text("Delete the look '%s'?", s_active >= 0 && s_active < (int)names.size() ? names[s_active].c_str() : "");
-            ImGui::TextDisabled("Your current sliders stay as they are.");
+        if (s_askDelete) { ImGui::OpenPopup("删除方案"); s_askDelete = false; }
+        if (ImGui::BeginPopupModal("删除方案", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::Text("删除方案“%s”？", s_active >= 0 && s_active < (int)names.size() ? names[s_active].c_str() : "");
+            ImGui::TextDisabled("当前滑块设置保持不变。");
             ImGui::Dummy(ImVec2(0, 4));
-            if (eam::ui::Button("Delete", eam::ui::icons::kTrash, eam::ui::ButtonKind::Danger)) {
+            if (eam::ui::Button("删除", eam::ui::icons::kTrash, eam::ui::ButtonKind::Danger)) {
                 { std::lock_guard<std::mutex> lk(g_settingsMutex); if (s_active >= 0 && s_active < (int)g_looks.size()) { ForgetLook(g_host, kAddonId, g_looks[s_active].name); g_looks.erase(g_looks.begin() + s_active); } }
                 s_active = -1; changed = true; ImGui::CloseCurrentPopup();
             }
             ImGui::SameLine();
-            if (eam::ui::Button("Cancel", eam::ui::icons::kClose)) ImGui::CloseCurrentPopup();
+            if (eam::ui::Button("取消", eam::ui::icons::kClose)) ImGui::CloseCurrentPopup();
             ImGui::EndPopup();
         }
     }
@@ -250,25 +250,25 @@ void DrawPanel() {
     Block(kProductName);
     const bool dlaa = kScalerAddon;
     if (!kScalerAddon) {   // the upscalers are switched on and off in the addon list only (one switch, not two)
-        const std::string label = std::string("Enable ") + kProductName;
+        const std::string label = std::string("启用 ") + kProductName;
         if (ImGui::Checkbox(label.c_str(), &c.enabled)) { changed = true; if (c.enabled) { ClaimFrames(); SwitchOn(); } else ReleaseFrames(); }
         Tip(kScalerAddon
-                ? "Master switch. Off = Lossless Scaling's NIS runs as usual and the upscaler stops.\nTo compare while playing, use the Before / after hotkey instead: it keeps the upscaler running.\n"
-                  "Only one of the upscalers (DLSS, FSR, XeSS) works at a time (switching one on in the addon list switches the others off); any of them works beside DLSS 5 Neural Rendering."
-                : "Master switch. Off = Lossless Scaling runs untouched and the model stops.\nTo compare before and after while playing, use the Before / after hotkey instead: it keeps the model running.");
+                ? "总开关。关闭 = Lossless Scaling 的 NIS 照常运行，上采样器停止。\n想在游戏中对比，请改用前后对比快捷键：它会让上采样器保持运行。\n"
+                  "多个上采样器（DLSS、FSR、XeSS）同时只能运行一个（在插件列表中开启一个会关闭其余）；它们都可以与 DLSS 5 神经渲染并存。"
+                : "总开关。关闭 = Lossless Scaling 不受影响照常运行，模型停止。\n想在游戏中对比前后画面，请改用前后对比快捷键：它会让模型保持运行。");
     }
     if (!kScalerAddon) ImGui::SameLine();
-    if (ImGui::SmallButton("Reset history")) g_resetRequested = true;
-    Tip("The model blends each frame with the ones before it. Press this after a scene cut, or if a ghost or smear seems stuck on screen.");
+    if (ImGui::SmallButton("重置历史")) g_resetRequested = true;
+    Tip("模型会把当前帧与之前的帧混合。场景切换后，或屏幕上有残影或拖影卡住不动时，按此按钮。");
     ImGui::SameLine();
-    if (ImGui::SmallButton("Restore defaults")) {
+    if (ImGui::SmallButton("恢复默认值")) {
         const float was = c.p.workingScale; const NrParams keep = c.p; c.p = ProductDefaults(); c.p.hudCount = keep.hudCount; memcpy(c.p.hud, keep.hud, sizeof c.p.hud); c.p.hudFeather = keep.hudFeather; c.lsFirst = true; changed = true; if (c.p.workingScale != was) createChanged = true;
     }
-    Tip("Put the look and quality sliders back to this addon's defaults. Your presets, hotkeys and the advanced settings are not touched.");
+    Tip("把方案和画质滑块恢复为本插件的默认值。你的预设、快捷键和高级设置不受影响。");
     if (!kScalerAddon) {   // the other addon of the pair (the upscalers take the NIS pass and work beside Neural Rendering)
         const std::string owner = FrameOwner();
         if (!owner.empty() && owner != kAddonId)
-            Note("%s is on now. Turning this on switches it off: only one of the two works on the frames at a time.", ProductNameOf(owner.c_str()));
+            Note("%s 目前已开启。开启此项会将其关闭：两者同时只能有一个处理画面。", ProductNameOf(owner.c_str()));
     }
     bool modelChanged = false;
     if (kScalerAddon)
@@ -279,154 +279,154 @@ void DrawPanel() {
         int current = 0;
         for (size_t i = 1; i < choices.size(); ++i) if (_wcsicmp(choices[i].path.c_str(), chosen.c_str()) == 0) current = (int)i;
         ImGui::SetNextItemWidth(ImGui::GetFontSize() * 18.0f);
-        if (!choices.empty() && ImGui::BeginCombo(kXessScaler ? "XeSS version" : kFsrScaler ? "FSR version" : "DLSS version", choices[current].name.c_str())) {
+        if (!choices.empty() && ImGui::BeginCombo(kXessScaler ? "XeSS 版本" : kFsrScaler ? "FSR 版本" : "DLSS 版本", choices[current].name.c_str())) {
             for (size_t i = 0; i < choices.size(); ++i)
                 if (ImGui::Selectable(choices[i].name.c_str(), (int)i == current) && (int)i != current) ChooseRuntimeFile(choices[i].path);
             ImGui::EndCombo();
         }
-        Tip(kXessScaler ? "Which XeSS runtime runs: Intel's, which comes with the addon, or one added with the + next to XeSS in the manager's Runtimes list "
-                          "(bottom left). Switching takes a moment while the game runs."
-          : kFsrScaler ? "Which FSR runs. AMD's FSR 3.1.4 comes with the addon and runs on any card. FSR 4 is AMD's newer, machine-learning upscaler: "
-                         "sharper and steadier in motion, and heavier; the OptiScaler team's build runs it on cards AMD's own does not (it is not signed). "
-                         "Switching takes a second while the game runs. More files: the + next to FSR in the manager's Runtimes list (bottom left)."
-                       : "Which DLSS runtime runs: the one that comes with the addon, or one added with the + next to DLSS in the manager's Runtimes list "
-                         "(bottom left). Switching takes a moment while the game runs.");
+        Tip(kXessScaler ? "运行哪个 XeSS 运行时：插件自带的 Intel 版本，或通过管理器运行时列表（左下角）中 XeSS 旁的 + 添加的版本。"
+                          "游戏运行中切换需要一点时间。"
+          : kFsrScaler ? "运行哪个 FSR。插件自带 AMD 的 FSR 3.1.4，可在任何显卡上运行。FSR 4 是 AMD 较新的机器学习上采样器："
+                         "更锐利、运动中更稳定，但开销更大；OptiScaler 团队的构建能在 AMD 官方不支持的显卡上运行它（该构建未签名）。"
+                         "游戏运行中切换需要一秒。更多文件：管理器运行时列表（左下角）中 FSR 旁的 +。"
+                       : "运行哪个 DLSS 运行时：插件自带的版本，或通过管理器运行时列表（左下角）中 DLSS 旁的 + 添加的版本。"
+                         "游戏运行中切换需要一点时间。");
     }
     if (dlaa && !kAnyCardScaler) {
         // one line each: the letter, the generation, what it does best here (nr_sreval, Silent Hill f shrunk 1.5x, 2026-09-27: L the steadiest
         // in slow motion and close to the best in fast turns; E the best in fast turns; M the weakest here and the heaviest. World of Warcraft at
         // 1:1, 2026-09-28: L pulses on a 4-frame cycle, seen as flicker while moving; E does not, and the owner confirmed it live)
-        static const char* const presets[] = { "Auto (recommended): E at 1:1; when upscaling K on RTX 20/30 cards, L on newer ones", "K: DLSS 4, the light one (NVIDIA's default for Quality)", "L: DLSS 4, the steadiest when upscaling",
-                                               "J: DLSS 4, a little less trailing than K", "M: DLSS 4.5, sharpest in games, the heaviest", "E: DLSS 3 (CNN), the steadiest at 1:1 (DLAA)" };
+        static const char* const presets[] = { "自动（推荐）：1:1 时用 E；上采样时 RTX 20/30 显卡用 K，更新的显卡用 L", "K：DLSS 4，最轻量（NVIDIA 质量档的默认）", "L：DLSS 4，上采样时最稳定",
+                                               "J：DLSS 4，拖尾比 K 略少", "M：DLSS 4.5，游戏中最锐利，开销最大", "E：DLSS 3（CNN），1:1 时最稳定（DLAA）" };
         static const unsigned kPresetOf[] = { SrEngine::kPresetAuto, 11u, 12u, 10u, 13u, 5u };
         int preset = 0;
         for (int i = 0; i < 6; ++i) if (kPresetOf[i] == c.dlaaPreset || (i == 1 && c.dlaaPreset == 0)) preset = i;   // (a saved 0, NVIDIA's own default, shows as K)
-        if (ImGui::Combo("DLSS model", &preset, presets, 6)) { c.dlaaPreset = kPresetOf[preset]; changed = true; modelChanged = true; }
-        Tip("Which DLSS model runs. Recommended: Auto, which picks E at 1:1 (DLAA: the game at the screen's size) and L when upscaling. At 1:1, L pulses every fourth "
-            "frame, which shows as flicker while you move (measured in World of Warcraft); E does not. When upscaling, L is the only one that does not "
-            "drift from the picture while the camera pans slowly, and nearly the best in fast turns. K is NVIDIA's default. J is K's sibling: a little less "
-            "trailing, a little more flicker. M is DLSS 4.5's model: sharper in games that give it camera jitter, and about three times K's cost; here "
-            "it did worst. E is DLSS 3's CNN model: the lightest, the best in fast turns, and it keeps a still picture crisp. Compare them with the "
-            "Before / after hotkey. Changing it restarts the engine.\n"
-            "Lossless Scaling gives DLSS no camera jitter and no depth, so it smooths and steadies edges and shimmer but cannot add detail beyond the frame's own, as it does in a game that supports DLSS.");
+        if (ImGui::Combo("DLSS 模型", &preset, presets, 6)) { c.dlaaPreset = kPresetOf[preset]; changed = true; modelChanged = true; }
+        Tip("运行哪个 DLSS 模型。推荐：自动，1:1 时选 E（DLAA：游戏以屏幕原始大小运行），上采样时选 L。1:1 时 L 每四帧脉动一次，"
+            "移动时表现为闪烁（在《魔兽世界》中实测）；E 不会。上采样时，L 是唯一在镜头缓慢平移时不偏离画面的模型，"
+            "快速转动时也接近最佳。K 是 NVIDIA 的默认。J 与 K 同源：拖尾略少，"
+            "闪烁略多。M 是 DLSS 4.5 的模型：在提供相机抖动的游戏中更锐利，开销约为 K 的三倍；"
+            "在这里表现最差。E 是 DLSS 3 的 CNN 模型：最轻量，快速转动时最佳，静态画面保持清晰。用前后对比快捷键"
+            "对比两者。更改后会重启引擎。\n"
+            "Lossless Scaling 不向 DLSS 提供相机抖动和深度信息，因此它能平滑稳定边缘与闪烁，但无法像在原生支持 DLSS 的游戏中那样添加画面本身之外的细节。");
     }
 
-    Block("Settings");
-    Note("Open a section to change it. Sliders: double-click to reset, Ctrl+click to type a value, Ctrl+scroll to fine-tune. The small tick marks the default.");
+    Block("设置");
+    Note("展开一个分区即可修改。滑块：双击重置，Ctrl+点击输入数值，Ctrl+滚动微调。小刻度标记默认值。");
     ImGui::Dummy(ImVec2(0, ImGui::GetFontSize() * 0.3f));
-    if (eam::ui::SectionHeader(dlaa ? "Motion" : "Model (what it does to the picture)")) {
+    if (eam::ui::SectionHeader(dlaa ? "运动估计" : "模型（它对画面的处理）")) {
         // Read by the model at every evaluate: changes apply on the next frame. Ranges are what the model honours
         // (docs/dlssnr-knobs.md): intensity clamps at 1, the local strengths do not clamp at all.
         if (!dlaa) {
-        int style = (int)c.p.style; const char* styles[] = { "Standard", "Natural", "Cinematic" };
-        if (ImGui::Combo("Style", &style, styles, 3)) { c.p.style = style; changed = true; }
-        Tip("The model's three looks. Standard is the default. Natural compresses highlights by about 10% and can read as a dark vignette. Cinematic is the third variant.");
-        changed |= SL("Model intensity", &c.p.intensity, 0.0f, 1.0f, "%.2f");
-        Tip("How much of its edit the model produces. 0 = the model changes nothing; 1 = full. The model clamps at 1.\n(The Blend amount slider below is separate: it scales what gets added to the picture afterwards.)");
-        changed |= SL("Fine detail strength", &c.p.localStructure, -2.0f, 5.0f, "%.2f");
-        Tip("How strongly the model works on fine detail (edges, textures, text). 1 is the default. Above about 5 it turns to garbage; negative values give an 'anti-detail' look. Not clamped by the model.");
-        changed |= SL("Local contrast", &c.p.localTone, -2.0f, 5.0f, "%.2f");
-        Tip("How strongly the model works on local tone and contrast (how bright and dark areas separate). 1 is the default; same range behaviour as Fine detail strength.");
-        changed |= SL("Skin and face detail", &c.p.skinStructure, -1.0f, 3.0f, c.p.skinStructure <= -0.99f ? "same as fine detail" : "%.2f");
-        Tip("Detail strength where the model thinks it sees skin. At the far left it simply follows Fine detail strength. It only acts where skin is detected, so the change can be subtle.");
+        int style = (int)c.p.style; const char* styles[] = { "标准", "自然", "电影感" };
+        if (ImGui::Combo("风格", &style, styles, 3)) { c.p.style = style; changed = true; }
+        Tip("模型的三种风格。标准为默认。自然会把高光压缩约 10%，看起来可能像暗角。电影感是第三种变体。");
+        changed |= SL("模型强度", &c.p.intensity, 0.0f, 1.0f, "%.2f");
+        Tip("模型最终呈现多少自身修改。0 = 模型不做任何更改；1 = 全部生效。模型上限为 1。\n（下方的混合幅度滑块是独立的：它缩放事后叠加到画面上的内容。）");
+        changed |= SL("精细细节强度", &c.p.localStructure, -2.0f, 5.0f, "%.2f");
+        Tip("模型对精细细节（边缘、纹理、文字）的处理强度。默认为 1。约 5 以上会变成乱码；负值会呈现“反向细节”效果。模型不对此做钳制。");
+        changed |= SL("局部对比度", &c.p.localTone, -2.0f, 5.0f, "%.2f");
+        Tip("模型对局部色调与对比度（明暗区域分离程度）的处理强度。默认为 1；范围特性与精细细节强度相同。");
+        changed |= SL("皮肤与人脸细节", &c.p.skinStructure, -1.0f, 3.0f, c.p.skinStructure <= -0.99f ? "同精细细节" : "%.2f");
+        Tip("模型识别为皮肤区域的细节强度。拉到最左端时直接跟随精细细节强度。只在检测到皮肤的地方生效，因此变化可能很细微。");
         bool am = c.p.useAutoMask != 0;
-        if (ImGui::Checkbox("Detect skin automatically", &am)) { c.p.useAutoMask = am; changed = true; }
-        Tip("Let the model find skin and faces on its own (the 'auto mask'). The effect is small; it is on by default.");
+        if (ImGui::Checkbox("自动检测皮肤", &am)) { c.p.useAutoMask = am; changed = true; }
+        Tip("让模型自行寻找皮肤和人脸（即“自动遮罩”）。效果较小；默认开启。");
         }
         if (dlaa) {   // the upscaler: where DLSS's motion vectors come from
-            const char* sources[] = { "Measured from the frames (any game)", "Lossless Scaling's frame generation", "None" };
-            if (ImGui::Combo("Motion", &c.motionSource, sources, 3)) changed = true;
-            Tip(kXessScaler ? "XeSS combines several frames, and needs to know where each pixel was in the frame before; a game with XeSS built in tells it. Here:\n"
-                           "Measured from the frames: the upscaler compares each frame with the one before and finds how every part of the picture moved. "
-                           "Works with frame generation on or off, in any game. Costs a little GPU time (shown under Upscaling).\n"
-                           "Lossless Scaling's frame generation: the motion its frame generation measures (only with frame generation on; coarser, a quarter of the game's size).\n"
-                           "None: XeSS assumes nothing moves. Sharp when still, smeared when the camera turns: this is here to compare." :
-                kFsrScaler ? "FSR combines several frames, and needs to know where each pixel was in the frame before; a game with FSR built in tells it. Here:\n"
-                           "Measured from the frames: the upscaler compares each frame with the one before and finds how every part of the picture moved. "
-                           "Works with frame generation on or off, in any game. Costs a little GPU time (shown under Upscaling).\n"
-                           "Lossless Scaling's frame generation: the motion its frame generation measures (only with frame generation on; coarser, a quarter of the game's size).\n"
-                           "None: FSR assumes nothing moves. Sharp when still, smeared when the camera turns: this is here to compare." :
-                "DLSS combines several frames, and needs to know where each pixel was in the frame before; a game with DLSS built in tells it. Here:\n"
-                "Measured from the frames: the upscaler compares each frame with the one before and finds how every part of the picture moved. "
-                "Works with frame generation on or off, in any game. Costs a little GPU time (shown under Upscaling).\n"
-                "Lossless Scaling's frame generation: the motion its frame generation measures (only with frame generation on; coarser, a quarter of the game's size).\n"
-                "None: DLSS assumes nothing moves. Sharp when still, smeared when the camera turns: this is here to compare.");
+            const char* sources[] = { "从帧间测量（任何游戏）", "Lossless Scaling 的帧生成", "无" };
+            if (ImGui::Combo("运动估计", &c.motionSource, sources, 3)) changed = true;
+            Tip(kXessScaler ? "XeSS 会结合多帧，需要知道每个像素在上一帧中的位置；内置 XeSS 的游戏会自行提供。此处可选：\n"
+                           "从帧间测量：上采样器把当前帧与上一帧对比，找出画面各部分的移动方式。"
+                           "帧生成开或关均可，任何游戏都适用。占用少量 GPU 时间（显示在上采样一节）。\n"
+                           "Lossless Scaling 的帧生成：用其帧生成测得的运动（仅在帧生成开启时可用；较粗糙，为游戏画面的四分之一大小）。\n"
+                           "无：XeSS 假定画面静止不动。静止时清晰，镜头转动时拖影：仅用于对比。" :
+                kFsrScaler ? "FSR 会结合多帧，需要知道每个像素在上一帧中的位置；内置 FSR 的游戏会自行提供。此处可选：\n"
+                           "从帧间测量：上采样器把当前帧与上一帧对比，找出画面各部分的移动方式。"
+                           "帧生成开或关均可，任何游戏都适用。占用少量 GPU 时间（显示在上采样一节）。\n"
+                           "Lossless Scaling 的帧生成：用其帧生成测得的运动（仅在帧生成开启时可用；较粗糙，为游戏画面的四分之一大小）。\n"
+                           "无：FSR 假定画面静止不动。静止时清晰，镜头转动时拖影：仅用于对比。" :
+                "DLSS 会结合多帧，需要知道每个像素在上一帧中的位置；内置 DLSS 的游戏会自行提供。此处可选：\n"
+                "从帧间测量：上采样器把当前帧与上一帧对比，找出画面各部分的移动方式。"
+                "帧生成开或关均可，任何游戏都适用。占用少量 GPU 时间（显示在上采样一节）。\n"
+                "Lossless Scaling 的帧生成：用其帧生成测得的运动（仅在帧生成开启时可用；较粗糙，为游戏画面的四分之一大小）。\n"
+                "无：DLSS 假定画面静止不动。静止时清晰，镜头转动时拖影：仅用于对比。");
         }
         if (!dlaa) {
-        changed |= ImGui::Checkbox("Use Lossless Scaling's motion data", &c.p.useFlow);
-        Tip("Feeds the motion Lossless Scaling's frame generation measures (its optical flow) to the model as motion vectors, and uses it to slide the enhancement onto the generated in-between frames. Turn it off only to test without motion.");
-        { const NrStats& fs = g_engine.Stats(); ImGui::SameLine(); if (fs.hasFlow) ImGui::TextDisabled("(flow %ux%u)", fs.flowW, fs.flowH); else ImGui::TextDisabled("(no flow texture seen yet)"); }
+        changed |= ImGui::Checkbox("使用 Lossless Scaling 的运动数据", &c.p.useFlow);
+        Tip("把 Lossless Scaling 帧生成测得的运动（其光流）作为运动向量提供给模型，并用它把增强效果对齐到生成的中间帧上。仅在没有运动的情况下测试时才关闭。");
+        { const NrStats& fs = g_engine.Stats(); ImGui::SameLine(); if (fs.hasFlow) ImGui::TextDisabled("（光流 %ux%u）", fs.flowW, fs.flowH); else ImGui::TextDisabled("（尚未见到光流纹理）"); }
         {
-            int mm = static_cast<int>(c.p.modelMotion); const char* mms[] = { "Measured from the frames (per pixel)", "Lossless Scaling's flow (coarse)" };
+            int mm = static_cast<int>(c.p.modelMotion); const char* mms[] = { "从帧间测量（逐像素）", "Lossless Scaling 的光流（粗糙）" };
             if (!c.p.useFlow) ImGui::BeginDisabled();
-            if (ImGui::Combo("The model's motion", &mm, mms, 2)) { c.p.modelMotion = static_cast<uint32_t>(mm); changed = true; }
+            if (ImGui::Combo("模型的运动", &mm, mms, 2)) { c.p.modelMotion = static_cast<uint32_t>(mm); changed = true; }
             if (!c.p.useFlow) ImGui::EndDisabled();
-            Tip("Where the model's motion vectors come from. Measured from the frames (the default): the addon compares each frame the model sees with the one "
-                "before and finds how every part moved, per pixel and for this very frame, so the model's output holds together in motion with less smear. "
-                "Lossless Scaling's flow: the motion its frame generation measures, a quarter of the frame's size. Either way the enhancement is slid onto the "
-                "generated frames with Lossless Scaling's flow. The measurement costs a fraction of a millisecond at the model's working size.");
+            Tip("模型的运动向量来自哪里。从帧间测量（默认）：插件把模型看到的每一帧与上一帧对比，"
+                "逐像素找出本帧各部分的移动，让模型输出在运动中保持连贯、拖影更少。"
+                "Lossless Scaling 的光流：其帧生成测得的运动，为画面四分之一大小。无论选哪种，增强效果都会"
+                "通过 Lossless Scaling 的光流对齐到生成的帧上。在模型工作分辨率下，测量耗时不到一毫秒。");
         }
         if (!c.p.useFlow) ImGui::BeginDisabled();
-        if (ImGui::Checkbox("Use this frame's motion (wait for Lossless Scaling's flow)", &c.freshFlow)) { changed = true; tapChanged = true; }
-        Tip("On: the model runs a moment later in each frame, once Lossless Scaling has measured how this frame moved, so its motion vectors are current. "
-            "Off: it runs as soon as the frame is captured and gets the previous frame's motion, one frame late, which smears and ghosts when the camera turns, starts or stops. "
-            "On is the default; the switch is here to compare the two.");
+        if (ImGui::Checkbox("使用本帧的运动（等待 Lossless Scaling 的光流）", &c.freshFlow)) { changed = true; tapChanged = true; }
+        Tip("开：模型在每帧中稍晚运行，等 Lossless Scaling 测得本帧的移动后才执行，因此运动向量是最新的。"
+            "关：帧一捕获就运行，拿到的是上一帧的运动，晚了一帧，镜头转动、启动或停止时会出现拖影和残影。"
+            "默认为开；提供此开关是为了对比两种模式。");
         if (!c.p.useFlow) ImGui::EndDisabled();
-        if (ImGui::Checkbox("The picture fills the whole screen", &c.composeFillsScreen)) changed = true;
-        Tip("Off (the default): Lossless Scaling draws the game at its own shape with black bars when the screen is wider or taller (a 16:9 game on a 32:9 screen), and the model's "
-            "change is kept to the picture, not the bars. Turn it on if Lossless Scaling is set to stretch the picture over the whole screen, so the model's change covers all of it.");
-        if (ImGui::Checkbox("Also with frame generation off", &c.presentMode)) changed = true;
-        Tip("With Lossless Scaling's frame generation off there is no captured frame to run on. On (the default): the model then takes the frame Lossless Scaling "
-            "presents. The model's working size is taken as for a 1920-wide frame, so it costs what it does with frame generation on. Off: without frame "
-            "generation the addon does nothing.");
+        if (ImGui::Checkbox("画面铺满整个屏幕", &c.composeFillsScreen)) changed = true;
+        Tip("关（默认）：屏幕比游戏更宽或更高时（如 32:9 屏幕上运行 16:9 游戏），Lossless Scaling 会按游戏原始比例绘制并留黑边，"
+            "模型的修改只作用于画面而不触及黑边。若 Lossless Scaling 设置为把画面拉伸到整个屏幕，请开启此项，让模型的修改覆盖全屏。");
+        if (ImGui::Checkbox("帧生成关闭时也运行", &c.presentMode)) changed = true;
+        Tip("Lossless Scaling 的帧生成关闭时，没有可用的捕获帧。开（默认）：模型改用 Lossless Scaling 呈现的帧。"
+            "模型工作分辨率按 1920 宽的帧计算，因此开销与帧生成开启时相同。"
+            "关：没有帧生成时插件不做任何事。");
         if (!c.presentMode) ImGui::BeginDisabled();
         ImGui::Indent();
-        if (ImGui::Checkbox("Wait for each frame's own result", &c.presentWait)) changed = true;
-        Tip("Off (the default): each frame gets the newest result that is ready, usually the frame before's, moved along the measured motion to where the "
-            "picture is now. Nothing waits, so the model's time is not added in front of each frame. On: each frame waits on the GPU for its own result. Exact, "
-            "but the model's whole run (several milliseconds) comes before every frame is shown, which can make frames miss the display's refresh.");
+        if (ImGui::Checkbox("等待每帧自己的结果", &c.presentWait)) changed = true;
+        Tip("关（默认）：每帧使用已就绪的最新结果，通常是上一帧的结果，按测得的运动对齐到当前画面位置。"
+            "无需等待，因此模型耗时不会加在每帧前面。开：每帧在 GPU 上等待自己的结果。精确，"
+            "但模型的完整运行（数毫秒）会排在每帧显示之前，可能导致帧错过显示器的刷新。");
         ImGui::Unindent();
         if (!c.presentMode) ImGui::EndDisabled();
         {
-            static const char* const encodings[] = { "Automatic", "SDR", "HDR" };
+            static const char* const encodings[] = { "自动", "SDR", "HDR" };
             ImGui::SetNextItemWidth(220.0f);
-            if (ImGui::Combo("Frame encoding", &c.frameEncoding, encodings, 3)) changed = true;
-            Tip("What the frames hold, so an HDR picture is worked on as the model and the look controls expect. Automatic (the default): 8-bit frames are "
-                "SDR, 16-bit float ones HDR (scRGB), and 10-bit ones HDR (HDR10) when Windows runs the display in HDR, SDR otherwise. HDR frames are "
-                "brought to an SDR view with Windows' SDR content brightness as white, and only the change goes back into the frame, so highlights keep "
-                "their brightness. SDR or HDR here overrides that for the 10-bit and 16-bit frames (8-bit ones are always SDR): set it only if the "
-                "picture comes out washed out, too dark or too bright. The Technical status section shows what was decided.");
+            if (ImGui::Combo("帧编码", &c.frameEncoding, encodings, 3)) changed = true;
+            Tip("帧的内容格式，让 HDR 画面按模型和方案控件的预期处理。自动（默认）：8 位帧视为"
+                "SDR，16 位浮点帧视为 HDR (scRGB)，10 位帧在 Windows 以 HDR 运行显示器时视为 HDR (HDR10)，否则视为 SDR。HDR 帧"
+                "会以 Windows 的 SDR 内容亮度作为白色基准转到 SDR 视图，且只有修改部分写回帧中，因此高光"
+                "保持原有亮度。此处选 SDR 或 HDR 会覆盖 10 位和 16 位帧的判定（8 位帧始终是 SDR）："
+                "仅在画面发灰、过暗或过亮时才需要设置。技术状态一节会显示实际判定结果。");
         }
         }
     }
-    if (kScalerAddon && eam::ui::SectionHeader("Upscaling")) {
+    if (kScalerAddon && eam::ui::SectionHeader("上采样")) {
         const ScalerView v = GetScalerView();
         const char* const U = kUpscalerName;
-        if (v.starting) ImGui::TextDisabled(kXessScaler ? "Loading Intel's XeSS runtime..." : kFsrScaler ? "Loading AMD's FSR runtime..." : "Loading NVIDIA's DLSS runtime...");
-        else if (v.failed) ImGui::TextColored(eam::ui::theme::V(eam::ui::theme::kDanger), "%s could not run: %s. Lossless Scaling's NIS runs as usual.", U, v.error.c_str());
-        else if (v.preparing) ImGui::TextColored(eam::ui::theme::V(eam::ui::theme::kWarn), "%s is getting ready for this frame format (the first frame can take a while); NIS runs meanwhile.", U);
+        if (v.starting) ImGui::TextDisabled(kXessScaler ? "正在加载 Intel 的 XeSS 运行时..." : kFsrScaler ? "正在加载 AMD 的 FSR 运行时..." : "正在加载 NVIDIA 的 DLSS 运行时...");
+        else if (v.failed) ImGui::TextColored(eam::ui::theme::V(eam::ui::theme::kDanger), "%s 无法运行：%s。Lossless Scaling 的 NIS 照常运行。", U, v.error.c_str());
+        else if (v.preparing) ImGui::TextColored(eam::ui::theme::V(eam::ui::theme::kWarn), "%s 正在为该帧格式做准备（第一帧可能较慢）；期间由 NIS 运行。", U);
         else if (!v.blocked.empty()) {   // the NIS pass is there but the upscaler cannot take it: say why, rather than look like it runs
             ImGui::PushStyleColor(ImGuiCol_Text, eam::ui::theme::V(eam::ui::theme::kWarn));
-            if (v.nisSeen) ImGui::TextWrapped("NIS pass found (%ux%u -> %ux%u), but %s is not replacing it: %s", v.inW, v.inH, v.outW, v.outH, U, v.blocked.c_str());
-            else ImGui::TextWrapped("%s is not replacing NIS: %s", U, v.blocked.c_str());
+            if (v.nisSeen) ImGui::TextWrapped("找到 NIS 处理趟（%ux%u -> %ux%u），但 %s 未接管它：%s", v.inW, v.inH, v.outW, v.outH, U, v.blocked.c_str());
+            else ImGui::TextWrapped("%s 未接管 NIS：%s", U, v.blocked.c_str());
             ImGui::PopStyleColor();
         }
-        else if (!v.nisSeen) ImGui::TextWrapped("Waiting for Lossless Scaling's NIS pass. Choose NIS as the Scaling Type and scale a game that runs in a window smaller than the screen.");
-        else if (!v.ready) ImGui::TextDisabled("NIS pass found (%ux%u -> %ux%u); %s is not running yet.", v.inW, v.inH, v.outW, v.outH, U);
+        else if (!v.nisSeen) ImGui::TextWrapped("正在等待 Lossless Scaling 的 NIS 处理趟。请选择 NIS 作为缩放类型，并缩放一个以小于屏幕的窗口运行的游戏。");
+        else if (!v.ready) ImGui::TextDisabled("找到 NIS 处理趟（%ux%u -> %ux%u）；%s 尚未运行。", v.inW, v.inH, v.outW, v.outH, U);
         else {
             const std::string running = v.provider.empty() ? std::string(U) : std::string(U) + " " + v.provider;   // "FSR 4.1.1b"
-            ImGui::TextWrapped("%s upscales %ux%u -> %ux%u (x%.2f) in place of NIS: %.2f ms a frame on the GPU (motion %.2f ms of it), %llu frames so far%s.", running.c_str(), v.inW, v.inH,
+            ImGui::TextWrapped("%s 接替 NIS 上采样 %ux%u -> %ux%u (x%.2f)：GPU 上每帧 %.2f ms（其中运动估计 %.2f ms），目前已处理 %llu 帧%s。", running.c_str(), v.inW, v.inH,
                                v.outW, v.outH, v.inW ? (float)v.outW / v.inW : 0.0f, v.gpuMs, v.motionMs, (unsigned long long)v.runs,
-                               v.perFrame > 1 ? " (real and generated frames alike)" : "");
+                               v.perFrame > 1 ? "（真实帧与生成帧同样处理）" : "");
             if (v.second.valid) {
-                ImGui::TextDisabled("Last second: %.0f pictures a second (%.0f%% in close pairs); %.1f%% shown twice, %.1f%% of frames not handed over, %.1f%% waited for on the GPU.",
+                ImGui::TextDisabled("上一秒：%.0f 幅/秒（%.0f%% 为紧密帧对）；%.1f%% 重复显示，%.1f%% 的帧未交付，%.1f%% 在 GPU 上等待。",
                                     v.second.fps, v.second.closePct, v.second.repeatPct, v.second.skipPct, v.second.waitPct);
-                Tip("Close pairs: two frames within 6 ms of each other, as adaptive frame generation makes them. Shown twice: the upscaler had not finished a newer picture "
-                    "when Lossless Scaling needed one, so the one before was shown again (a small judder). Waited for on the GPU: rather than that, Lossless Scaling's "
-                    "frame waited on the GPU for the next picture (the setting below). Not handed over: the upscaler still had two frames to do, so this one was "
-                    "left out. A GPU running at its limit makes these rise: a frame cap with some headroom helps most.");
+                Tip("紧密帧对：彼此相差不到 6 ms 的两帧，由自适应帧生成产生。重复显示：Lossless Scaling 需要画面时"
+                    "上采样器还没完成更新的一幅，于是又显示了上一幅（轻微卡顿）。在 GPU 上等待：为避免重复，"
+                    "Lossless Scaling 的帧在 GPU 上等待下一幅画面（即下方那个设置）。未交付：上采样器还有两帧待处理，"
+                    "于是跳过了这一帧。GPU 满载时这些数值会升高：设置一个略有余量的帧率上限最有效。");
             }
-            if (g_compare.load() == 2) ImGui::TextColored(eam::ui::theme::V(eam::ui::theme::kWarn), "Showing Lossless Scaling's NIS for comparison (Before / after hotkey).");
+            if (g_compare.load() == 2) ImGui::TextColored(eam::ui::theme::V(eam::ui::theme::kWarn), "正在显示 Lossless Scaling 的 NIS 以供对比（前后对比快捷键）。");
         }
         {   // a preset for how much work the upscaler spends: the resolution ratio is the game window's (Lossless Scaling scales what it captures), so these set the extras
             struct Preset { bool skipRepeats, lightAuto, lightGen, reuseMotion; float steadySharp; };
@@ -440,137 +440,137 @@ void DrawPanel() {
             }
             int pick = current;
             ImGui::SetNextItemWidth(ImGui::GetFontSize() * 14.0f);
-            if (ImGui::Combo("Preset", &pick, "Quality\0Balanced (default)\0Performance\0Custom\0") && pick < 3 && pick != current) {
+            if (ImGui::Combo("预设", &pick, "质量\0平衡（默认）\0性能\0自定义\0") && pick < 3 && pick != current) {
                 const Preset& q = presets[pick];
                 c.scalerSkipRepeats = q.skipRepeats; c.scalerLightAuto = q.lightAuto; c.scalerLightGen = q.lightGen; c.scalerReuseMotion = q.reuseMotion; c.scalerSteadySharp = q.steadySharp;
                 changed = true;
             }
-            Tip("How much work the upscaler spends. The ratio between the game's picture and the screen is not set here: it is the size of the game's window against the screen (a window at half the screen is "
-                "what other upscalers call Performance). Quality: every picture is upscaled in full and every one gets its own motion estimate. Balanced: the defaults. Performance: a picture that is exactly "
-                "the one before is not upscaled again, the generated frames of frame generation always get the lighter upscaling, the motion estimate is shared between them and the steady sharpening is "
-                "off: the cheapest, best for a weak second card. Changing any of those below makes it Custom.");
+            Tip("上采样器花费多少算力。游戏画面与屏幕的比例不在这里设置：它取决于游戏窗口相对屏幕的大小（窗口为屏幕一半就是"
+                "其他上采样器所说的性能档）。质量：每幅画面都完整上采样，每幅都有自己的运动估计。平衡：默认值。性能：与上一帧完全相同的"
+                "画面不再重复上采样，帧生成的生成帧总是用更轻量的上采样，运动估计在它们之间共享，稳定锐化"
+                "关闭：最省算力，适合较弱的副卡。修改下方任何一项都会变成自定义。");
         }
-        changed |= SL("Sharpening", &c.p.sharpen, 0.0f, 1.0f, c.p.sharpen <= 0.001f ? "off" : "%.2f");
-        if (kFsrScaler) Tip("Sharpening of the upscaled picture, by our own pass as on DLSS and XeSS (AMD's RCAS left too little of the detail). Lossless Scaling's "
-                            "NIS sharpens too (its Sharpness setting), so without it FSR can look softer next to NIS. 0.5 is a good start (Ctrl+Shift+F2 / F3 in the game).");
-        else Tip("Contrast-adaptive sharpening of DLSS's picture (the FidelityFX CAS formula), which costs a fraction of a millisecond; above about 0.6 its effect is amplified "
-                 "past CAS's own maximum. DLSS has no sharpening of its own, while Lossless Scaling's NIS does (its Sharpness setting), so without it DLSS can look softer "
-                 "next to NIS. 0.5 is a good start (Ctrl+Shift+F2 / F3 in the game).");
+        changed |= SL("锐化", &c.p.sharpen, 0.0f, 1.0f, c.p.sharpen <= 0.001f ? "关" : "%.2f");
+        if (kFsrScaler) Tip("对上采样后画面的锐化，由我们自己的处理趟完成，与 DLSS 和 XeSS 上一样（AMD 的 RCAS 保留的细节太少）。"
+                            "Lossless Scaling 的 NIS 也有锐化（其锐度设置），所以不开启时 FSR 在 NIS 旁边会显得更柔。0.5 是不错的起点（游戏中按 Ctrl+Shift+F2 / F3）。");
+        else Tip("对 DLSS 画面的对比度自适应锐化（FidelityFX CAS 公式），耗时不到一毫秒；约 0.6 以上时，效果会在 CAS 自身上限之外继续增强。"
+                 "DLSS 自身没有锐化，而 Lossless Scaling 的 NIS 有（其锐度设置），所以不开启时 DLSS 在 NIS 旁边会显得更柔。"
+                 "0.5 是不错的起点（游戏中按 Ctrl+Shift+F2 / F3）。");
         // FSR 4 keeps its history its own way and takes none of FSR 3.1's tuning (nor the mask the slider widens): the slider would do nothing
         const bool fsr4 = kFsrScaler && GetScalerView().provider.rfind("4", 0) == 0;
         if (fsr4) ImGui::BeginDisabled();
-        { const float off = 0.0f; changed |= eam::ui::SliderFloat("Stability", &c.scalerStability, 0.0f, 1.0f, c.scalerStability <= 0.001f ? "off" : "%.2f", 0, &off); }
-        if (fsr4) { ImGui::EndDisabled(); Note("FSR 4 handles stability by itself: this slider is for FSR 3.1."); }
+        { const float off = 0.0f; changed |= eam::ui::SliderFloat("稳定性", &c.scalerStability, 0.0f, 1.0f, c.scalerStability <= 0.001f ? "关" : "%.2f", 0, &off); }
+        if (fsr4) { ImGui::EndDisabled(); Note("FSR 4 自行处理稳定性：此滑块仅用于 FSR 3.1。"); }
         { char tip[768];
-          snprintf(tip, sizeof tip, "Less shimmer on thin lines, wires and leaves, at the cost of more trailing behind what moves. The game gives the upscaler no "
-                   "sub-pixel camera shifts, so a line thinner than a pixel flickers from frame to frame; with this up, the motion measurement stops reporting that "
-                   "flicker as a place not to trust the history, so %s averages it out over the frames before%s. Off: as before. Try 0.5, then move it while "
-                   "you look at a fence or a power line. The game's own anti-aliasing (MSAA) is still what draws thin lines in the first place.",
-                   U, kFsrScaler ? ", and FSR keeps more of its history and reacts less to small changes of shading" : "");
+          snprintf(tip, sizeof tip, "减少细线、电线和树叶上的闪烁，代价是移动物体身后拖尾更多。游戏不向上采样器提供亚像素相机抖动，"
+                   "因此比一个像素还细的线会在帧间闪烁；调高此项后，运动测量不再把这种闪烁当作不可信历史的位置报告，"
+                   "于是 %s 会在之前的几帧间把它平均掉%s。关闭：与从前一样。试试 0.5，然后一边盯着栅栏或电线一边调整。"
+                   "细线本来仍由游戏自身的抗锯齿（MSAA）绘制。",
+                   U, kFsrScaler ? "，且 FSR 会保留更多历史信息，对明暗的细微变化反应更小" : "");
           Tip(tip); }
         {
-            if (ImGui::Checkbox("Steady in fast motion", &c.scalerFastMotion)) changed = true;
-            Tip("On (the default): where the picture moves fast (a quick camera turn) or the motion cannot be followed, the upscaler's picture leans on "
-                "the new frame instead of the frames before. The game gives the upscaler no sub-pixel camera shifts, so its memory of earlier frames adds "
-                "little detail there, and in a fast turn it trailed: leaves and edges with soft doubled outlines. Off: as before. Flip it while you turn "
-                "the camera to compare.");
+            if (ImGui::Checkbox("快速运动中保持稳定", &c.scalerFastMotion)) changed = true;
+            Tip("开（默认）：画面快速移动（快速转动镜头）或运动无法跟随时，上采样器画面倚重新帧而非之前的帧。"
+                "游戏不向上采样器提供亚像素相机抖动，它对早先帧的记忆在那里加不了多少细节，"
+                "快速转动时还会拖尾：树叶和边缘出现柔化的双重轮廓。关：与从前一样。"
+                "转动镜头时切换对比。");
             if (c.scalerFastMotion) {
-                if (ImGui::SliderFloat("Lean from", &c.scalerLeanFrom, 0.0f, 0.5f, c.scalerLeanFrom <= 0.0f ? "automatic" : "%.2f %% of the width a frame")) changed = true;
-                Tip("How much motion the lean starts from (fully at twice it). Automatic (0): 0.1 % of the frame's width a frame at 1:1 (about 4 px at 4K), "
-                    "0.05 % when upscaling. Lower: less trailing and smearing while you move, but at 1:1 the game's own jagged edges show more in motion. "
-                    "Higher: more of the upscaler's smoothing in motion, and more trailing. Move it while you walk and turn.");
+                if (ImGui::SliderFloat("倾斜起点", &c.scalerLeanFrom, 0.0f, 0.5f, c.scalerLeanFrom <= 0.0f ? "自动" : "每帧画面宽度的 %.2f %%")) changed = true;
+                Tip("开始倾斜的运动量门槛（达到其两倍时完全倾斜）。自动（0）：1:1 时每帧为画面宽度的 0.1 %（4K 下约 4 px），"
+                    "上采样时为 0.05 %。调低：移动时拖尾和涂抹更少，但 1:1 时游戏自身的锯齿在运动中更明显。"
+                    "调高：运动中上采样器的平滑更多，拖尾也更多。边走边转动镜头时调整。");
             }
-            if (ImGui::SliderFloat("Sharpness at rest", &c.scalerLeanRest, 0.0f, 1.0f, c.scalerLeanRest <= 0.0f ? "off" : "%.2f")) changed = true;
-            Tip("When the picture stands still the upscaler's own picture shows, and it is softer than the game's: with no camera jitter from Lossless Scaling "
-                "it has no extra detail to find, only its smoothing (anti-aliasing) to give. This puts that much of the plain stretched frame (see Steady in fast "
-                "motion) into the picture even at rest: 0 is the upscaler alone, 1 the plain stretch. Raise it if a still scene looks soft; sharpening (above) "
-                "then adds on top. The default is 0.5; measured against the game's full-size frames it is closer to them and steadier than 0.");
-            if (ImGui::SliderFloat("Steady sharpening", &c.scalerSteadySharp, 0.0f, 0.9f, c.scalerSteadySharp <= 0.0f ? "off" : "%.2f")) changed = true;
-            Tip("Sharpening amplifies the game's own shimmer as well as its detail. With this on, the sharpening is worked out from a running average of the "
-                "picture (followed along the motion, and trusted less where it moves fast), and only that is added to the current frame: the detail stays, the "
-                "shimmer is not amplified. On recordings it means about 10 points less flicker for the same detail on a still scene, and no change when upscaling in "
-                "motion. Costs about a millisecond at 4K. 0 is off; the default is 0.6.");
-            if (ImGui::SliderFloat("Sharpen less in fast motion", &c.scalerMoveCut, 0.0f, 1.0f, c.scalerMoveCut <= 0.0f ? "off" : "%.2f")) changed = true;
-            Tip("The eye cannot resolve the extra detail sharpening adds where the picture moves fast, but it does see the shimmer it amplifies. This lowers the sharpening "
-                "smoothly from 1 to 8 pixels of motion a frame, by this much at the fastest; at rest and in slow motion it is untouched. On a recording walking over cracked "
-                "ground at 1:1, 0.5 took the flicker added by sharpening from 113 % to 107 % of the game's own and the detail from 137 % to 127 %, and 1.0 to 102 % and 117 %. "
-                "Works with the passes of Steady sharpening (it needs the motion estimate). 0 is off; the default is 0.5.");
+            if (ImGui::SliderFloat("静止时锐度", &c.scalerLeanRest, 0.0f, 1.0f, c.scalerLeanRest <= 0.0f ? "关" : "%.2f")) changed = true;
+            Tip("画面静止时显示的是上采样器自己的画面，它比游戏的更柔：没有 Lossless Scaling 提供的相机抖动，它找不到额外细节，"
+                "只有自身的平滑（抗锯齿）可给。此项让普通拉伸画面（见快速运动中保持稳定）在静止时也按此比例混入：0 为纯上采样器，1 为纯拉伸。"
+                "静态画面看起来发软时调高；锐化（上方）会在此基础上再叠加。默认为 0.5；"
+                "与游戏的原始大小帧相比，它比 0 更接近原画面也更稳定。");
+            if (ImGui::SliderFloat("稳定锐化", &c.scalerSteadySharp, 0.0f, 0.9f, c.scalerSteadySharp <= 0.0f ? "关" : "%.2f")) changed = true;
+            Tip("锐化在放大细节的同时也会放大游戏自身的闪烁。开启后，锐化量根据画面的滑动平均计算"
+                "（沿运动跟踪，移动快处可信度降低），只有这部分被加到当前帧上：细节保留，闪烁不被放大。"
+                "在录制画面上，静态场景下同等细节约减少 10 点闪烁，上采样运动中则无变化。"
+                "4K 下耗时约一毫秒。0 为关闭；默认 0.6。");
+            if (ImGui::SliderFloat("快速运动中减少锐化", &c.scalerMoveCut, 0.0f, 1.0f, c.scalerMoveCut <= 0.0f ? "关" : "%.2f")) changed = true;
+            Tip("画面快速移动处，锐化添加的额外细节肉眼分辨不出，但它放大的闪烁却看得见。"
+                "此项把锐化从每帧 1 到 8 像素的运动量起平滑降低，最快时降这么多；静止和慢速运动时不受影响。"
+                "在一段以 1:1 行走在开裂地面上的录制中，0.5 把锐化新增的闪烁从游戏自身的 113 % 降到 107 %，细节从 137 % 降到 127 %；"
+                "1.0 则降到 102 % 和 117 %。与稳定锐化的处理趟配合（它需要运动估计）。0 为关闭；默认 0.5。");
         }
         {
-            if (ImGui::Checkbox("Crisp edges when moving (test)", &c.leanEasu)) changed = true;
-            Tip("A test, off by default. Where the picture moves, the upscaled picture leans on the new frame, stretched to the screen's size (see Steady in fast "
-                "motion). Off: with a smooth filter (Catmull-Rom). On: with AMD's FSR 1 edge-adaptive filter, which keeps diagonal and thin edges cleaner and "
-                "crisper. On recordings the two score the same on shimmer and detail; the difference is in how the edges look. Flip it while you turn the camera "
-                "and tell us which you prefer.");
+            if (ImGui::Checkbox("运动中边缘更清晰（测试）", &c.leanEasu)) changed = true;
+            Tip("一项测试，默认关闭。画面移动处，上采样画面倚重新帧，拉伸到屏幕大小（见快速运动中保持稳定）。"
+                "关：用平滑滤波（Catmull-Rom）。开：用 AMD 的 FSR 1 边缘自适应滤波，斜线和细边缘更干净锐利。"
+                "在录制画面上两者闪烁和细节得分相同，差别在边缘观感。"
+                "转动镜头时切换对比，告诉我们你更喜欢哪种。");
         }
         {
-            if (ImGui::Checkbox("Share motion between generated frames", &c.scalerReuseMotion)) changed = true;
-            Tip("With frame generation, two frames are shown for each one the game draws, and the motion from one to the next is about the same for both steps. On: every "
-                "other frame keeps the motion of the one before instead of measuring it again, which saves about a quarter of a millisecond a frame at 4K and scored the same "
-                "on recordings. Off: measured for every frame. It does nothing without frame generation.");
+            if (ImGui::Checkbox("生成帧之间共享运动估计", &c.scalerReuseMotion)) changed = true;
+            Tip("帧生成时，游戏每绘制一帧就显示两帧，而这两步之间到下一帧的运动大致相同。"
+                "开：隔一帧沿用前一帧的运动而不重新测量，4K 下每帧约省四分之一毫秒，录制得分相同。"
+                "关：每帧都重新测量。帧生成关闭时无作用。");
         }
         {
-            if (ImGui::Checkbox("Do not upscale a picture that is exactly the one before (test)", &c.scalerSkipRepeats)) changed = true;
-            Tip("A test, off by default. Each picture is compared with the one before, exactly, on the graphics card; when they are the same (a pause menu, a loading screen, or a 30 fps game seen at 60 or 120 Hz through a capture card) the last upscaled picture is copied instead of upscaling it again, which takes the upscaler's whole cost for that picture (about 1.4 ms of GPU at 2560x1440 for DLSS) down to a compare and a copy. Every eighth repeat is upscaled for real, so a setting you change shows within a few pictures. If the card is too busy to answer the compare in time, the picture is simply upscaled, and after three slow answers in a row the compare is left alone for ten seconds. Measured on recordings, the pictures were the same as without it.");
-            if (c.scalerSkipRepeats && v.ready && v.repeatChecks > 0) ImGui::TextDisabled("  %llu of %llu pictures compared were the same as the one before and not upscaled again (%.0f %%)", static_cast<unsigned long long>(v.repeatSkips),
+            if (ImGui::Checkbox("与上一幅完全相同的画面不再上采样（测试）", &c.scalerSkipRepeats)) changed = true;
+            Tip("一项测试，默认关闭。在显卡上把每幅画面与上一幅精确对比；相同时（暂停菜单、加载画面，或通过采集卡以 60 或 120 Hz 显示的 30 fps 游戏），直接复制上一次上采样的画面而不重新上采样，把上采样器对这幅画面的全部开销（DLSS 在 2560x1440 下约 1.4 ms GPU）降到一次对比加一次复制。每第八次重复会真正上采样，所以你改动的设置几幅画面内就会显示。若显卡太忙没来得及应答对比，画面照常上采样；连续三次应答过慢后，对比会暂停十秒。经录制实测，画面与不开启时相同。");
+            if (c.scalerSkipRepeats && v.ready && v.repeatChecks > 0) ImGui::TextDisabled("  %llu / %llu 幅对比的画面与上一幅相同，未再次上采样（%.0f %%）", static_cast<unsigned long long>(v.repeatSkips),
                                                                                        static_cast<unsigned long long>(v.repeatChecks), 100.0 * v.repeatSkips / v.repeatChecks);
-            if (ImGui::Checkbox("Lighter upscaling of generated frames when the card is full", &c.scalerLightAuto)) changed = true;
-            Tip("On by default. With frame generation the upscaler runs on every picture shown, the generated ones too, so a heavy model (DLSS 4.5, FSR 4) can take the game's frame rate down far more than a light one. Reads the graphics card's load once a second; when it has been at or over the limit (the manager's GPU limit on the Features tab, or 95 % while that is off) for three readings, the frames Lossless Scaling makes between the game's own get the lighter picture described below, and they are upscaled in full again once the load has been well under the limit for ten seconds. Measured on recordings, the lighter picture costs about 0.1 to 0.3 dB (a little more, 1.5 dB, in fast motion) and takes the upscaler's cost for those frames from about 1.4 ms to under 0.2 ms at 2560x1440. It does nothing without frame generation, or on a card whose load cannot be read. Turn it off to always upscale every picture in full.");
-            if (ImGui::Checkbox("Lighter upscaling of generated frames", &c.scalerLightGen)) changed = true;
-            Tip("On by default. With frame generation, the upscaler runs on the frames the game draws only; the frames Lossless Scaling makes between them get the last "
-                "upscaled picture moved along the motion, checked against the new frame (where they disagree, the new frame stretched plainly), and sharpened. That takes the "
-                "upscaler's cost for those frames from about 3 ms to under 1 ms at 4K, a quarter of the cost of a game frame. On recordings it scored the same on detail and "
-                "flicker, a little lower on steadiness in motion. Turn it off for the full upscale of every frame (the Quality preset does). It does nothing without frame generation.");
+            if (ImGui::Checkbox("显卡满载时生成帧用更轻的上采样", &c.scalerLightAuto)) changed = true;
+            Tip("默认开启。帧生成时上采样器会处理每幅显示的画面，包括生成的画面，因此重模型（DLSS 4.5、FSR 4）可能把游戏帧率拉低得远比轻模型多。此项每秒读取一次显卡负载；当连续三次读到负载达到或超过上限（管理器功能页的 GPU 限制，未设置时为 95 %），Lossless Scaling 在游戏自身帧之间生成的帧就改用下述更轻量的画面，负载连续十秒明显低于上限后再恢复完整上采样。经录制实测，更轻量的画面代价约 0.1 至 0.3 dB（快速运动中略多，1.5 dB），把这些帧的上采样开销从约 1.4 ms 降到 0.2 ms 以下（2560x1440）。帧生成关闭时无作用，显卡负载不可读时也无作用。关闭此项则始终完整上采样每幅画面。");
+            if (ImGui::Checkbox("生成帧用更轻的上采样", &c.scalerLightGen)) changed = true;
+            Tip("默认开启。帧生成时，上采样器只处理游戏绘制的帧；Lossless Scaling 在其间生成的帧改用上一幅上采样画面沿运动移动、与新帧核对"
+                "（不一致处用新帧直接拉伸），再锐化。4K 下这把这些帧的上采样开销从约 3 ms 降到 1 ms 以下，即游戏帧开销的四分之一。"
+                "录制实测细节和闪烁得分相同，运动中的稳定性略低。关闭此项则每帧都完整上采样（质量预设即如此）。"
+                "帧生成关闭时无作用。");
         }
         {
-            if (ImGui::Checkbox("Motion by shape (test)", &c.motionShapes)) changed = true;
-            Tip("A test, off by default. The motion the upscaler is given is found by matching small patches of the frame before to this one. Off: by "
-                "their brightness, as before. On: by their shape and edges, with the brightness itself counting little, so a flash, a spell effect, a "
-                "fade or a shadow passing over should mislead it less. Flip it where the light changes while you move, and tell us which looks steadier.");
+            if (ImGui::Checkbox("按形状测运动（测试）", &c.motionShapes)) changed = true;
+            Tip("一项测试，默认关闭。提供给上采样器的运动，是把上一帧的小块区域与当前帧匹配得出的。关：按亮度匹配，与从前一样。"
+                "开：按形状和边缘匹配，亮度本身权重很小，这样闪光、法术特效、淡入淡出或掠过的阴影更不容易误导它。"
+                "在移动中光线会变化的地方切换对比，告诉我们哪个看起来更稳。");
         }
-        { const float off = 0.0f; changed |= eam::ui::SliderFloat("Edge smoothing", &c.scalerEdges, 0.0f, 1.0f, c.scalerEdges <= 0.001f ? "off" : "%.2f", 0, &off); }
-        Tip("Anti-aliasing along the edges of the upscaled picture: for games without anti-aliasing of their own (stair steps on roofs, fences and "
-            "wires). It finds where the brightness steps, which way the edge runs and how far, and blends across it by the part of a pixel the true "
-            "edge would cover. Costs a fraction of a millisecond. It also softens text a little. If the game has anti-aliasing (MSAA), that is "
-            "better: use this where it has none.");
+        { const float off = 0.0f; changed |= eam::ui::SliderFloat("边缘平滑", &c.scalerEdges, 0.0f, 1.0f, c.scalerEdges <= 0.001f ? "关" : "%.2f", 0, &off); }
+        Tip("沿上采样画面边缘的抗锯齿：面向没有自带抗锯齿的游戏（屋顶、栅栏和电线上的锯齿）。"
+            "它找出亮度阶跃的位置、边缘的走向和长度，按真实边缘会覆盖的像素比例进行混合。"
+            "耗时不到一毫秒。它也会让文字略微变柔。"
+            "游戏自带抗锯齿（MSAA）时用它更好：此项留给没有抗锯齿的游戏。");
         {   // the picture controls: on the frame before it is upscaled; Neural Rendering's own take over while it is on
             const bool nrOn = NeuralRenderingOn();
             if (nrOn) ImGui::BeginDisabled();
-            { const float d = 0.0f; changed |= eam::ui::SliderFloat("Vibrance", &c.p.vibrance, 0.0f, 1.0f, c.p.vibrance <= 0.001f ? "off" : "%.2f", 0, &d); }
-            Tip("Lifts muted colours much more than vivid ones, so skin and already-strong colours are not pushed further: a natural colour boost.");
-            { const float d = 1.0f; changed |= eam::ui::SliderFloat("Saturation", &c.p.saturation, 0.0f, 2.0f, std::abs(c.p.saturation - 1.0f) < 0.005f ? "unchanged" : "%.2f", 0, &d); }
-            Tip("More colour everywhere (above 1) or less (below 1, 0 is black and white).");
-            { const float d = 0.0f; changed |= eam::ui::SliderFloat("Shadows", &c.p.shadows, -1.0f, 1.0f, std::abs(c.p.shadows) < 0.005f ? "unchanged" : "%+.2f", 0, &d); }
-            Tip("Lifts (right) or deepens (left) the dark parts only: see into a dark interior or a night without greying the rest.");
-            { const float d = 0.0f; changed |= eam::ui::SliderFloat("Highlights", &c.p.highlights, -1.0f, 1.0f, std::abs(c.p.highlights) < 0.005f ? "unchanged" : "%+.2f", 0, &d); }
-            Tip("Tames (left) or brightens (right) the bright parts only: a blown-out sky or snow gets detail back.");
-            { const float d = 0.0f; changed |= eam::ui::SliderFloat("Brightness", &c.p.brightness, -0.3f, 0.3f, "%+.2f", 0, &d); }
-            Tip("Lifts or lowers the whole picture, as a monitor's brightness does. For a game that is too dark (or too bright) to see into.");
-            { const float d = 1.0f; changed |= eam::ui::SliderFloat("Contrast", &c.p.contrast, 0.5f, 1.5f, "%.2f", 0, &d); }
-            Tip("Spreads the tones apart (above 1) or draws them together (below 1), around mid-grey.");
+            { const float d = 0.0f; changed |= eam::ui::SliderFloat("自然饱和度", &c.p.vibrance, 0.0f, 1.0f, c.p.vibrance <= 0.001f ? "关" : "%.2f", 0, &d); }
+            Tip("对黯淡颜色的提升远大于鲜艳颜色，因此肤色和本就浓郁的颜色不会被继续推高：自然的增色。");
+            { const float d = 1.0f; changed |= eam::ui::SliderFloat("饱和度", &c.p.saturation, 0.0f, 2.0f, std::abs(c.p.saturation - 1.0f) < 0.005f ? "不变" : "%.2f", 0, &d); }
+            Tip("整体增加（大于 1）或减少（小于 1，0 为黑白）颜色。");
+            { const float d = 0.0f; changed |= eam::ui::SliderFloat("阴影", &c.p.shadows, -1.0f, 1.0f, std::abs(c.p.shadows) < 0.005f ? "不变" : "%+.2f", 0, &d); }
+            Tip("只提亮（右）或加深（左）暗部：看清黑暗的室内或夜晚，而其余部分不发灰。");
+            { const float d = 0.0f; changed |= eam::ui::SliderFloat("高光", &c.p.highlights, -1.0f, 1.0f, std::abs(c.p.highlights) < 0.005f ? "不变" : "%+.2f", 0, &d); }
+            Tip("只压制（左）或提亮（右）亮部：过曝的天空或雪地找回细节。");
+            { const float d = 0.0f; changed |= eam::ui::SliderFloat("亮度", &c.p.brightness, -0.3f, 0.3f, "%+.2f", 0, &d); }
+            Tip("整体提亮或压暗画面，如同显示器的亮度。用于太暗（或太亮）看不清的游戏。");
+            { const float d = 1.0f; changed |= eam::ui::SliderFloat("对比度", &c.p.contrast, 0.5f, 1.5f, "%.2f", 0, &d); }
+            Tip("以中间灰为中心，把色调拉开（大于 1）或收拢（小于 1）。");
             { const float d = 1.0f; changed |= eam::ui::SliderFloat("Gamma", &c.p.gamma, 0.5f, 2.0f, "%.2f", 0, &d); }
-            Tip("Above 1 brightens the mid-tones and leaves black and white where they are: dark corners get visible without washing out the "
-                "sky. Below 1 darkens them.");
-            if (nrOn) { ImGui::EndDisabled(); Note("DLSS 5 Neural Rendering is on: its Picture section sets these now."); }
+            Tip("大于 1 时提亮中间调，黑与白保持不动：暗角变得可见而天空不发白。"
+                "小于 1 则压暗中间调。");
+            if (nrOn) { ImGui::EndDisabled(); Note("DLSS 5 神经渲染已开启：现在由其画面分区控制这些选项。"); }
         }
         {
             std::string game; { std::lock_guard<std::mutex> lk(g_settingsMutex); game = g_scalerGame; }
-            if (ImGui::Checkbox("Keep these settings per game", &c.scalerPerGame)) changed = true;
-            Tip("On (the default): sharpening, stability, edge smoothing, the colour and tone controls, the DLSS model and the motion are kept for each game, and come back when "
-                "that game takes focus. A change made here counts for the game played last.");
+            if (ImGui::Checkbox("每个游戏单独保存这些设置", &c.scalerPerGame)) changed = true;
+            Tip("开（默认）：锐化、稳定性、边缘平滑、颜色与色调控制、DLSS 模型和运动设置按游戏分别保存，该游戏获得焦点时自动恢复。"
+                "此处修改对最近游玩的游戏生效。");
             if (c.scalerPerGame) {
                 ImGui::SameLine();
-                ImGui::TextDisabled(game.empty() ? "(no game seen yet)" : "for %s", game.c_str());
+                ImGui::TextDisabled(game.empty() ? "（尚未见到游戏）" : "当前游戏：%s", game.c_str());
                 if (!c.scalerGames.empty()) {
                     int forget = -1;
-                    if (ImGui::TreeNode("Games with settings of their own")) {
+                    if (ImGui::TreeNode("有独立设置的游戏")) {
                         for (size_t i = 0; i < c.scalerGames.size(); ++i) {
                             const auto& [exe, p] = c.scalerGames[i];
                             ImGui::PushID(static_cast<int>(i));
                             ImGui::AlignTextToFramePadding();
-                            ImGui::Text("%s: sharpening %.2f, stability %.2f, edges %.2f", exe.c_str(), p.sharpen, p.stability, p.edges);
+                            ImGui::Text("%s：锐化 %.2f，稳定性 %.2f，边缘 %.2f", exe.c_str(), p.sharpen, p.stability, p.edges);
                             ImGui::SameLine();
-                            if (ImGui::SmallButton("Forget")) forget = static_cast<int>(i);
+                            if (ImGui::SmallButton("清除")) forget = static_cast<int>(i);
                             ImGui::PopID();
                         }
                         ImGui::TreePop();
@@ -579,162 +579,162 @@ void DrawPanel() {
                 }
             }
         }
-        if (ImGui::Checkbox("Wait on the GPU rather than repeat a picture", &c.scalerGpuWait)) changed = true;
-        Tip("When the upscaler has not finished a new picture by the time Lossless Scaling needs one (two frames close together, as adaptive frame generation makes "
-            "them), the picture before would be shown again: a small judder. On (the default), Lossless Scaling's frame waits on the GPU for the new picture instead, "
-            "as a game with DLSS built in waits for DLSS; the CPU never waits. Off: the picture before is shown again. Compare the line above with it on and off.");
-        Note("Compare with the Before / after hotkey (Compare and hotkeys): it switches between %s and Lossless Scaling's own NIS while you play.", U);
+        if (ImGui::Checkbox("在 GPU 上等待而不是重复上一幅画面", &c.scalerGpuWait)) changed = true;
+        Tip("当 Lossless Scaling 需要画面而上采样器还没完成新画面时（两帧靠得很近，自适应帧生成就会这样），会再次显示上一幅画面：轻微卡顿。"
+            "开（默认）：Lossless Scaling 的帧改为在 GPU 上等待新画面，如同内置 DLSS 的游戏等待 DLSS；CPU 永不等待。"
+            "关：再次显示上一幅画面。开关此项，对比上面一行的数值。");
+        Note("用前后对比快捷键（对比与快捷键一节）对比：游玩时它在 %s 与 Lossless Scaling 自带的 NIS 之间切换。", U);
         {   // HDR games: the frames are upscaled as light in the upscaler's HDR mode and put back in their own encoding (scaler11.h, SetEncoding)
-            static const char* const encodings[] = { "Automatic", "SDR", "HDR" };
+            static const char* const encodings[] = { "自动", "SDR", "HDR" };
             ImGui::SetNextItemWidth(220.0f);
-            if (ImGui::Combo("Frame encoding", &c.frameEncoding, encodings, 3)) changed = true;
-            Tip("For HDR games. Automatic (the default) works it out: 8-bit frames are SDR, 16-bit float ones HDR (scRGB), and 10-bit ones HDR (HDR10) "
-                "when Windows runs the display in HDR. Set SDR or HDR only if the picture comes out washed out, too dark or too bright. "
-                "Technical status shows what was decided.");
+            if (ImGui::Combo("帧编码", &c.frameEncoding, encodings, 3)) changed = true;
+            Tip("面向 HDR 游戏。自动（默认）会自行判断：8 位帧为 SDR，16 位浮点帧为 HDR (scRGB)，"
+                "10 位帧在 Windows 以 HDR 运行显示器时为 HDR (HDR10)。仅当画面发灰、过暗或过亮时才设置 SDR 或 HDR。"
+                "技术状态一节会显示实际判定。");
         }
     }
-    if (!kScalerAddon && eam::ui::SectionHeader("Quality and performance")) {
+    if (!kScalerAddon && eam::ui::SectionHeader("画质与性能")) {
         // The model costs ~10 ms + ~7 ms per megapixel on Ampere. The working scale is the only cost lever: past the
         // frame interval the model simply skips frames and the present side carries the last delta forward.
-        if (dlaa) Note("DLAA works on the whole frame, so there is no model resolution to choose.");
+        if (dlaa) Note("DLAA 作用于整个画面，因此没有模型分辨率可选。");
         else {
-        createChanged |= SL("Model resolution", &c.p.workingScale, 0.25f, 1.0f, "%.2f x the frame");
-        Tip("The frame is shrunk by this before the model sees it, and the model's change is stretched back up to the picture. 1.00 = the model sees the whole frame: best detail, costs the most. This is the only setting that changes the cost.\nOn an RTX 4070 Ti SUPER the model takes roughly 2.7 ms plus 1.8 ms per megapixel.\nChanging it has the model made again in the background: for a fraction of a second the last result carries on, and the game does not stall.\nWith Auto on, this is the most it uses.");
-        changed |= ImGui::Checkbox("Auto: keep the model within a time budget", &c.autoQuality);
-        Tip("Lowers the model resolution while the model takes longer than the budget below (a busy scene, a hot card), and raises it back toward your own setting above when there is room. It changes slowly (down after 3 s over the budget, up after 10 s well under it) so it judges steady numbers, not a moment's spike. Nothing that changes the look is touched.");
+        createChanged |= SL("模型分辨率", &c.p.workingScale, 0.25f, 1.0f, "%.2f x 画面");
+        Tip("模型看到画面之前先按此比例缩小，模型的修改再拉伸回完整画面。1.00 = 模型看到整个画面：细节最佳，开销最大。这是唯一改变开销的设置。\n在 RTX 4070 Ti SUPER 上模型耗时约 2.7 ms 加每百万像素 1.8 ms。\n更改后模型会在后台重新构建：不到一秒内继续显示上一次结果，游戏不会卡住。\n开启自动画质时，此值是它使用的上限。");
+        changed |= ImGui::Checkbox("自动画质：把模型限制在时间预算内", &c.autoQuality);
+        Tip("当模型耗时超过下方预算时（场景复杂、显卡过热），降低模型分辨率；有余量时再回升到接近你上方的设置。它变化缓慢（超预算 3 秒后才下调，远低于预算 10 秒后才上调），因此依据的是稳定数值而非瞬时尖峰。不影响任何改变画面效果的设置。");
         if (c.autoQuality) {
-            changed |= SL("Time budget", &c.autoBudgetMs, 2.0f, 15.0f, "%.1f ms");
-            Tip("The model time to stay within. Half the frame time is a good start: 8 ms at 60 fps, 5 ms at 100 fps.");
-            changed |= SL("Lowest model resolution", &c.autoFloor, 0.25f, 1.0f, "%.2f x the frame");
-            Tip("Auto never goes below this, even when the model still runs over the budget.");
+            changed |= SL("时间预算", &c.autoBudgetMs, 2.0f, 15.0f, "%.1f ms");
+            Tip("模型耗时要控制的时长。帧时间的一半是不错的起点：60 fps 时 8 ms，100 fps 时 5 ms。");
+            changed |= SL("最低模型分辨率", &c.autoFloor, 0.25f, 1.0f, "%.2f x 画面");
+            Tip("自动画质绝不会低于此值，即使模型仍超出预算。");
             {   // the manager's GPU limit (Features tab) works through this auto quality
                 const uint32_t limit = g_host && g_host->GetHostVersion() >= 0x010300 ? g_host->GpuLimitPercent() : 0u;
                 if (limit) {
                     const unsigned load = g_gpuPercent.load();
                     bool over; { std::lock_guard<std::mutex> lock(g_autoMutex); over = g_auto.GpuOver(); }
-                    if (load) ImGui::TextWrapped("The manager's GPU limit is on (%u %%): the card is at %u %% now.%s", limit, load, over ? " Over the limit: the model is being trimmed." : "");
-                    else ImGui::TextWrapped("The manager's GPU limit is on (%u %%); the card's load has not been read yet (it is read once a second while the model runs).", limit);
-                } else ImGui::TextDisabled("To keep the graphics card under a load, switch on GPU limit in the manager's Features tab: this auto quality then lowers the model resolution while the card is at the limit.");
+                    if (load) ImGui::TextWrapped("管理器的 GPU 限制已开启（%u %%）：显卡当前负载 %u %%。%s", limit, load, over ? "已超限：正在削减模型。" : "");
+                    else ImGui::TextWrapped("管理器的 GPU 限制已开启（%u %%）；尚未读到显卡负载（模型运行时每秒读取一次）。", limit);
+                } else ImGui::TextDisabled("要让显卡保持在负载上限之下，请在管理器功能页开启 GPU 限制：之后显卡达到限制时，自动画质会降低模型分辨率。");
             }
             float scale, avg; std::deque<AutoQuality::Step> history;
             { std::lock_guard<std::mutex> lock(g_autoMutex); scale = g_auto.Scale(); avg = g_auto.AverageMs(); history = g_auto.History(); }
-            if (scale <= 0) ImGui::TextDisabled("Auto starts with the model's first run.");
-            else if (scale < c.p.workingScale - 0.001f) ImGui::TextWrapped("Auto runs the model at %.2f x (model %.1f ms, budget %.1f ms).", scale, avg, c.autoBudgetMs);
-            else ImGui::TextWrapped("Auto runs the model at your setting, %.2f x (model %.1f ms, budget %.1f ms).", scale, avg, c.autoBudgetMs);
-            if (!history.empty() && ImGui::TreeNode("autohist", "Recent changes (%d)", static_cast<int>(history.size()))) {
+            if (scale <= 0) ImGui::TextDisabled("自动画质将在模型首次运行后开始。");
+            else if (scale < c.p.workingScale - 0.001f) ImGui::TextWrapped("自动画质正以 %.2f x 运行模型（模型 %.1f ms，预算 %.1f ms）。", scale, avg, c.autoBudgetMs);
+            else ImGui::TextWrapped("自动画质正按你的设置 %.2f x 运行模型（模型 %.1f ms，预算 %.1f ms）。", scale, avg, c.autoBudgetMs);
+            if (!history.empty() && ImGui::TreeNode("autohist", "最近的调整（%d）", static_cast<int>(history.size()))) {
                 const uint64_t now = GetTickCount64();
                 for (auto it = history.rbegin(); it != history.rend(); ++it)
-                    ImGui::Text("%3llu s ago: %.2f -> %.2f (model %.1f ms)", static_cast<unsigned long long>((now - it->atMs) / 1000), it->from, it->to, it->modelMs);
+                    ImGui::Text("%3llu 秒前：%.2f -> %.2f（模型 %.1f ms）", static_cast<unsigned long long>((now - it->atMs) / 1000), it->from, it->to, it->modelMs);
                 ImGui::TreePop();
             }
         }
         }
         {
-            static const char* const everyNames[] = { "On every frame", "On every 2nd frame", "On every 3rd frame", "On every 4th frame" };
+            static const char* const everyNames[] = { "每帧运行", "每 2 帧运行", "每 3 帧运行", "每 4 帧运行" };
             int every = std::clamp(c.modelEvery, 1, 4) - 1;
-            if (ImGui::Combo("Run the model", &every, everyNames, 4)) { c.modelEvery = every + 1; changed = true; }
-            Tip("How often the model runs on the game's real frames. The model's cost is mostly fixed (about 3 ms a run on a fast card, whatever the model resolution), so running it on every 2nd frame takes about half of it back: the frames in between are shown with the last result moved along the motion, as the frames frame generation makes already are. Measured offline on four recordings of World of Warcraft: a result two frames old, moved along the motion, is 0.04 to 0.23 levels (of 255) further from the frame's own result than one frame old, against a result that is 4 to 8 levels big. Auto quality may ask for more on top of this.");
+            if (ImGui::Combo("模型运行频率", &every, everyNames, 4)) { c.modelEvery = every + 1; changed = true; }
+            Tip("模型在游戏真实帧上的运行频率。模型开销基本固定（快速显卡上每次约 3 ms，与模型分辨率无关），所以每 2 帧运行一次能省回约一半：中间的帧用上一次结果沿运动移动来显示，帧生成生成的帧本来就是这么做。在四段《魔兽世界》录制上离线实测：两帧前的结果沿运动移动后，与该帧自身结果的差距比一帧前的结果远 0.04 到 0.23 级（共 255 级），而结果本身有 4 到 8 级。自动画质可能在此之上要求更多。");
         }
         {
             const NrStats& st = g_engine.Stats();
             if (g_bridge.Width()) {
                 float mp = (float)st.workW * (float)st.workH / 1e6f; double iv = g_bridge.IntervalMs();
                 uint64_t runs = g_bridge.Runs(), skipped = g_bridge.Skipped(), seen = runs + skipped;
-                ImGui::TextWrapped("frame %ux%u -> model input %ux%u (%.2f MP): model %.1f ms (avg %.1f), frame interval %.1f ms", g_bridge.Width(), g_bridge.Height(), st.workW, st.workH, mp, st.nrMs, g_avgModelMs, iv);
-                if (st.workW && st.workW < g_bridge.Width()) ImGui::TextDisabled("The model works on a smaller picture than the frame and its change is stretched back to the full frame: a size picked by Model resolution or by Auto quality to fit the budget, not a limit of the addon (raise the setting, or turn Auto quality off, for a larger one; it costs more).");
-                if (st.builds) ImGui::TextWrapped("model made %u time%s, the last in %.0f ms off the frame path; %llu frames not run meanwhile", st.builds, st.builds == 1 ? "" : "s", st.lastBuildMs, (unsigned long long)st.busySkips);
-                ImGui::TextWrapped("model keeps up with %llu of %llu frames (%.0f%%); GPU start +%.1f / done +%.1f ms after submit; tap CPU %.2f ms", (unsigned long long)runs, (unsigned long long)seen, seen ? 100.0 * runs / seen : 0.0, st.startMs, st.doneMs, g_bridge.CpuMs());
-                ImGui::TextWrapped("presents: %llu on LS's swap chain (%s), composed %llu, compose CPU %.2f ms, target %s; newest delta = frame %llu, applied at offset %.2f frames",
+                ImGui::TextWrapped("帧 %ux%u -> 模型输入 %ux%u（%.2f MP）：模型 %.1f ms（平均 %.1f），帧间隔 %.1f ms", g_bridge.Width(), g_bridge.Height(), st.workW, st.workH, mp, st.nrMs, g_avgModelMs, iv);
+                if (st.workW && st.workW < g_bridge.Width()) ImGui::TextDisabled("模型在比帧更小的画面上工作，其修改会被拉伸回完整画面：这个大小由模型分辨率或自动画质为符合预算而选定，并非插件限制（调高该设置或关闭自动画质可获得更大画面；开销也更大）。");
+                if (st.builds) ImGui::TextWrapped("模型已构建 %u 次，最后一次耗时 %.0f ms（不在帧路径上）；期间 %llu 帧未运行%s", st.builds, st.builds == 1 ? "" : "s", st.lastBuildMs, (unsigned long long)st.busySkips);
+                ImGui::TextWrapped("模型跟上了 %llu / %llu 帧（%.0f%%）；提交后 GPU 启动 +%.1f / 完成 +%.1f ms；截取 CPU %.2f ms", (unsigned long long)runs, (unsigned long long)seen, seen ? 100.0 * runs / seen : 0.0, st.startMs, st.doneMs, g_bridge.CpuMs());
+                ImGui::TextWrapped("呈现：%llu 次在 LS 的交换链上（%s），合成 %llu 次，合成 CPU %.2f ms，目标 %s；最新增量 = 帧 %llu，应用于 %.2f 帧偏移处",
                     (unsigned long long)g_lsPresents, g_tap.PresentPattern(), (unsigned long long)g_composed, g_compose.CpuMs(), g_compose.TargetInfo(), (unsigned long long)g_lastDelta, g_lastOffset);
-                if (seen > 30 && runs * 2 < seen) ImGui::TextColored(eam::ui::theme::V(eam::ui::theme::kWarn), "the model runs on fewer than half of the frames: the delta is carried across frames by the flow. Lower the working scale for a fresher result.");
-            } else ImGui::TextDisabled("(no frame tapped yet)");
+                if (seen > 30 && runs * 2 < seen) ImGui::TextColored(eam::ui::theme::V(eam::ui::theme::kWarn), "模型在不到一半的帧上运行：增量由光流跨帧传递。调低模型分辨率可获得更新的结果。");
+            } else ImGui::TextDisabled("（尚未截取到帧）");
         }
         if (!dlaa) {
-        { int ps = (int)c.p.passes; const int dps = (int)kDefaults.passes; if (eam::ui::SliderInt("Model passes", &ps, 1, 4, "%d", 0, &dps)) { c.p.passes = (uint32_t)ps; changed = true; } }
-        Tip("How many times the model reworks each frame; every pass takes the previous result as its input. 1 = normal. 2 to 4 make the effect stronger (and can start to look over-processed, so compare with the Before / after hotkey).\nEach extra pass costs roughly another model run: watch the model time and the 'keeps up with' line below. If the model cannot keep up it skips frames, and the last result is carried forward.");
-        { int mp = (int)std::min<uint32_t>(c.p.modelPreset, 1u); const char* presets[] = { "Newer (smaller, faster)", "Older (the original look)" };
-          if (ImGui::Combo("Model preset", &mp, presets, 2)) { c.p.modelPreset = (uint32_t)mp; changed = true; } }
-        Tip("Which model the runtime uses. Newer is the runtime's own choice since build 310.9.16: smaller and about 1.7 times faster, with a gentler effect (about like the older model at 0.7 passes). Older is the model of build 310.8 and earlier: the stronger, original look at the old cost.\nA model file older than 310.9.16 has only the older model, so this makes no difference there. Changing it makes the model again (a moment of the old result).");
+        { int ps = (int)c.p.passes; const int dps = (int)kDefaults.passes; if (eam::ui::SliderInt("模型处理趟", &ps, 1, 4, "%d", 0, &dps)) { c.p.passes = (uint32_t)ps; changed = true; } }
+        Tip("模型对每帧重复加工的次数；每个处理趟把上一个结果作为输入。1 = 正常。2 到 4 会让效果更强（也可能开始显得过度加工，请用前后对比快捷键对比）。\n每个额外处理趟约多一次模型运行：留意模型耗时和下方“跟上了”一行。模型跟不上时会跳帧，沿用上一次结果。");
+        { int mp = (int)std::min<uint32_t>(c.p.modelPreset, 1u); const char* presets[] = { "较新（更小、更快）", "较旧（原始效果）" };
+          if (ImGui::Combo("模型预设", &mp, presets, 2)) { c.p.modelPreset = (uint32_t)mp; changed = true; } }
+        Tip("运行时使用哪个模型。自 310.9.16 构建起，较新的是运行时自身的选择：更小、约快 1.7 倍，效果更温和（约相当于旧模型 0.7 个处理趟）。较旧的是 310.8 及更早构建的模型：更强、原始的效果，开销也是旧的。\n早于 310.9.16 的模型文件只有旧模型，此项在那里不起作用。更改会重建模型（片刻显示旧结果）。");
         }
-        changed |= SL("Temporal smoothing", &c.p.deltaSmooth, 0.0f, 0.9f, c.p.deltaSmooth <= 0.001f ? "off" : "%.2f");
-        Tip("Blends the model's change for this frame with its change for the previous one, moved along with the picture by Lossless Scaling's motion data. It calms shimmer and crawling in fine detail (distant roads, fences, foliage) at the price of a little softness or ghosting when the camera moves fast. 0 = off; 0.4 is the default (the pick in World of Warcraft). Costs almost nothing.");
-        changed |= ImGui::Checkbox("Give Lossless Scaling GPU priority", &c.lsFirst);
-        Tip("Raises Lossless Scaling's own graphics work above the model's on the shared card, so frame generation and presenting are not delayed while the model runs. Recommended.");
-        changed |= SL("Blend amount", &c.p.composeIntensity, 0.0f, 2.0f);
-        Tip("How much of the model's change is added to each presented frame. 1 = exactly what the model made; 0 = none; above 1 exaggerates it.");
-        changed |= SL("Ghost guard", &c.p.ghostGuard, 0.0f, 1.0f, c.p.ghostGuard <= 0.001f ? "off" : "%.2f");
-        Tip("Stops the faint copy of the previous frame that can trail moving things. The model works on an older frame and its change is moved onto the current one with Lossless Scaling's motion data; where that motion data is unreliable (the edge of a moving object, something just uncovered) the change lands in the wrong place. This fades the change out there, and a little more the older it is, and leaves still and steadily moving areas alone. 0 = off, 0.5 = a good start, 1 = strongest. To see where it acts, set Diagnostic view to Ghost guard: dark areas are faded.");
-        changed |= SL("Dark guard", &c.p.darkGuard, 0.0f, 0.15f, c.p.darkGuard <= 0.0005f ? "off" : "%.3f");
-        Tip("The model brightens dark areas and puts a faint glow around bright things such as a HUD box on a black screen, leaning green on black. Pixels darker than this take none of it (it fades in up to the value; 0.04 is about 10 of 255). Higher removes more of the glow on dark panels, at the price of the model's lift in real shadows; 0 turns it off.");
-        changed |= SL("Limit per-pixel change", &c.p.maxDelta, 0.05f, 1.0f);
-        Tip("The most any pixel's colour may be changed (0..1 of full range). Lower is safer and subtler; it stops the model from making harsh jumps.");
-        changed |= SL("Protect bright areas from", &c.p.hiProtect, 0.5f, 1.0f, c.p.hiProtect >= 0.999f ? "off" : "%.2f");
-        Tip("The model's change fades out as a pixel's brightness rises from this level to white, so highlights are not crushed. At the far right (off) the change applies everywhere.");
+        changed |= SL("时间平滑", &c.p.deltaSmooth, 0.0f, 0.9f, c.p.deltaSmooth <= 0.001f ? "关" : "%.2f");
+        Tip("把模型对本帧的修改与对上一帧的修改混合，并按 Lossless Scaling 的运动数据随画面移动。它能平息精细细节（远处道路、栅栏、植被）的闪烁和爬行，代价是镜头快速移动时略微变柔或残影。0 = 关；0.4 是默认（《魔兽世界》中的选定值）。开销几乎为零。");
+        changed |= ImGui::Checkbox("让 Lossless Scaling 优先使用 GPU", &c.lsFirst);
+        Tip("在共享显卡上把 Lossless Scaling 自身的图形工作排到模型之前，使模型运行时帧生成和呈现不被延误。推荐开启。");
+        changed |= SL("混合幅度", &c.p.composeIntensity, 0.0f, 2.0f);
+        Tip("模型修改有多少加到每幅呈现的帧上。1 = 恰好模型所作；0 = 无；大于 1 则夸大。");
+        changed |= SL("残影防护", &c.p.ghostGuard, 0.0f, 1.0f, c.p.ghostGuard <= 0.001f ? "关" : "%.2f");
+        Tip("阻止移动事物身后拖着的上一帧淡影。模型在较早的帧上工作，其修改借助 Lossless Scaling 的运动数据搬到当前帧；运动数据不可靠处（移动物体的边缘、刚露出的区域），修改会落错位置。此项在那里把修改淡出，越旧淡得越多，静止和匀速移动的区域不受影响。0 = 关，0.5 = 不错的起点，1 = 最强。想看它在哪里起作用，把诊断视图设为残影防护：变暗的区域即被淡出处。");
+        changed |= SL("暗部防护", &c.p.darkGuard, 0.0f, 0.15f, c.p.darkGuard <= 0.0005f ? "关" : "%.3f");
+        Tip("模型会提亮暗部，并在明亮物体周围留下淡淡光晕，例如黑底屏幕上的 HUD 框，在黑色上偏绿。比此值暗的像素完全不参与（它渐变到该值才完全生效；0.04 约为 255 级中的 10 级）。调高可去除更多暗色面板上的光晕，代价是模型对真实阴影的提亮；0 为关闭。");
+        changed |= SL("限制单像素变化", &c.p.maxDelta, 0.05f, 1.0f);
+        Tip("任何像素颜色允许的最大改变量（全范围的 0..1）。越低越安全保守；可防止模型产生生硬跳变。");
+        changed |= SL("高光保护起点", &c.p.hiProtect, 0.5f, 1.0f, c.p.hiProtect >= 0.999f ? "关" : "%.2f");
+        Tip("像素亮度从该水平升向白色时，模型的修改逐渐淡出，高光因此不被压碎。拉到最右（关）时修改作用于所有亮度。");
     }
-    if (!kScalerAddon && eam::ui::SectionHeader("Picture (sharpness, tone, colour, grain)")) {
+    if (!kScalerAddon && eam::ui::SectionHeader("画面（锐化、色调、颜色、颗粒）")) {
         // Compose side, applied to every presented frame, real and generated alike.
-        changed |= SL("Sharpen", &c.p.sharpen, 0.0f, 1.0f, c.p.sharpen <= 0.001f ? "off" : "%.2f");
-        Tip("Contrast-adaptive sharpening of every presented frame, after the model's change is added. The model and the upscale both soften the picture; a little sharpening (0.2 to 0.4) puts the bite back. Costs almost nothing.");
-        changed |= SL("Saturation", &c.p.saturation, 0.0f, 2.0f, fabsf(c.p.saturation - 1.0f) < 0.005f ? "unchanged" : "%.2f");
-        Tip("Colour intensity of the finished picture. 1.00 = unchanged; 0 = black and white; above 1 = more vivid. Applied last, to real and generated frames alike. Costs nothing measurable.");
-        changed |= SL("Vibrance", &c.p.vibrance, 0.0f, 1.0f, c.p.vibrance <= 0.001f ? "off" : "%.2f");
-        Tip("Like Saturation, but it lifts muted colours much more than vivid ones, so skin tones and already-strong colours are not pushed further. Use this for a gentle, natural colour boost; use Saturation for a blunt one.");
-        changed |= SL("Brightness", &c.p.brightness, -0.3f, 0.3f, fabsf(c.p.brightness) < 0.0005f ? "unchanged" : "%+.2f");
-        Tip("Lifts or lowers every pixel by the same amount (on the picture's own 0 to 1 scale). Simple, but it also lifts blacks, so it can wash the picture out: for a brighter look without that, try Gamma first.");
-        changed |= SL("Contrast", &c.p.contrast, 0.5f, 1.5f, fabsf(c.p.contrast - 1.0f) < 0.002f ? "unchanged" : "%.2f");
-        Tip("Pushes the picture away from mid-grey (above 1) or toward it (below 1). Blacks get darker and whites brighter as it rises; some detail in the extremes can clip.");
-        changed |= SL("Gamma", &c.p.gamma, 0.5f, 2.0f, fabsf(c.p.gamma - 1.0f) < 0.002f ? "unchanged" : "%.2f");
-        Tip("Bends the mid-tones without touching pure black or pure white. Above 1 brightens the mid-tones (opens up dark scenes); below 1 darkens them. Usually the best brightness control.");
-        changed |= SL("Shadows", &c.p.shadows, -1.0f, 1.0f, fabsf(c.p.shadows) < 0.005f ? "unchanged" : "%+.2f");
-        Tip("Works on the dark parts of the picture only. Above 0 lifts them (opens up dark corners and dungeons); below 0 deepens them. Bright areas stay as they are.");
-        changed |= SL("Highlights", &c.p.highlights, -1.0f, 1.0f, fabsf(c.p.highlights) < 0.005f ? "unchanged" : "%+.2f");
-        Tip("Works on the bright parts of the picture only. Below 0 pulls them down (recovers sky and glare); above 0 pushes them up. Dark areas stay as they are.");
-        changed |= SL("Film grain", &c.p.grain, 0.0f, 1.0f, c.p.grain <= 0.002f ? "off" : "%.2f");
-        Tip("Fine monochrome noise, strongest in the mid-tones and different on every frame. Hides banding and the plastic look of upscaling. Keep it low (0.1 to 0.3).");
-        { int gs = (int)c.p.grainSize; const int dgs = (int)kDefaults.grainSize; if (eam::ui::SliderInt("Grain size", &gs, 1, 4, "%d px", 0, &dgs)) { c.p.grainSize = (float)gs; changed = true; } }
-        Tip("How big each grain speck is, in screen pixels. 1 is the finest; on a 4K screen 2 looks closest to film.");
+        changed |= SL("锐化", &c.p.sharpen, 0.0f, 1.0f, c.p.sharpen <= 0.001f ? "关" : "%.2f");
+        Tip("对每幅呈现帧的对比度自适应锐化，在模型修改叠加之后进行。模型和上采样都会让画面变柔；少量锐化（0.2 到 0.4）能找回力度。开销几乎为零。");
+        changed |= SL("饱和度", &c.p.saturation, 0.0f, 2.0f, fabsf(c.p.saturation - 1.0f) < 0.005f ? "不变" : "%.2f");
+        Tip("成品画面的颜色强度。1.00 = 不变；0 = 黑白；大于 1 = 更鲜艳。最后应用，真实帧与生成帧一视同仁。开销测不出来。");
+        changed |= SL("自然饱和度", &c.p.vibrance, 0.0f, 1.0f, c.p.vibrance <= 0.001f ? "关" : "%.2f");
+        Tip("类似饱和度，但对黯淡颜色的提升远大于鲜艳颜色，肤色和本就浓郁的颜色不会被继续推高。想要温和自然的增色用它；想要生硬的增色用饱和度。");
+        changed |= SL("亮度", &c.p.brightness, -0.3f, 0.3f, fabsf(c.p.brightness) < 0.0005f ? "不变" : "%+.2f");
+        Tip("所有像素加减同一数值（按画面自身 0 到 1 的刻度）。简单，但也会提亮黑色，可能让画面发灰：想要不发灰的提亮，先试 Gamma。");
+        changed |= SL("对比度", &c.p.contrast, 0.5f, 1.5f, fabsf(c.p.contrast - 1.0f) < 0.002f ? "不变" : "%.2f");
+        Tip("让画面远离中间灰（大于 1）或靠近它（小于 1）。调高时黑色更黑、白色更白；两端的细节可能被裁掉。");
+        changed |= SL("Gamma", &c.p.gamma, 0.5f, 2.0f, fabsf(c.p.gamma - 1.0f) < 0.002f ? "不变" : "%.2f");
+        Tip("弯曲中间调而不触及纯黑和纯白。大于 1 提亮中间调（展开昏暗场景）；小于 1 压暗。通常这是最好的亮度控制。");
+        changed |= SL("阴影", &c.p.shadows, -1.0f, 1.0f, fabsf(c.p.shadows) < 0.005f ? "不变" : "%+.2f");
+        Tip("只作用于画面暗部。大于 0 提亮（照亮暗角和地牢）；小于 0 加深。亮部保持不变。");
+        changed |= SL("高光", &c.p.highlights, -1.0f, 1.0f, fabsf(c.p.highlights) < 0.005f ? "不变" : "%+.2f");
+        Tip("只作用于画面亮部。小于 0 压低（找回天空和眩光）；大于 0 抬高。暗部保持不变。");
+        changed |= SL("胶片颗粒", &c.p.grain, 0.0f, 1.0f, c.p.grain <= 0.002f ? "关" : "%.2f");
+        Tip("细腻的单色噪点，中间调最强，每帧都不同。掩盖色带和上采样的塑料感。保持较低（0.1 到 0.3）。");
+        { int gs = (int)c.p.grainSize; const int dgs = (int)kDefaults.grainSize; if (eam::ui::SliderInt("颗粒大小", &gs, 1, 4, "%d px", 0, &dgs)) { c.p.grainSize = (float)gs; changed = true; } }
+        Tip("每个颗粒的大小，以屏幕像素计。1 最细；4K 屏幕上 2 最接近胶片。");
     }
-    if (!kScalerAddon && eam::ui::SectionHeader("Keep the HUD untouched")) {
-        Note("Areas where the picture stays exactly as Lossless Scaling made it (no model change, sharpening, tone, colour or grain): for action bars, the minimap, chat and text. Draw them on a snapshot of the game.");
+    if (!kScalerAddon && eam::ui::SectionHeader("保持 HUD 原样")) {
+        Note("画面保持与 Lossless Scaling 输出完全一致（无模型修改、锐化、色调、颜色或颗粒）的区域：用于动作条、小地图、聊天和文字。请在游戏画面的快照上绘制。");
         const bool busy = screenshot::Busy();
         if (busy) ImGui::BeginDisabled();
-        if (eam::ui::Button(busy ? "Taking it..." : "Take a snapshot", eam::ui::icons::kCheck, eam::ui::ButtonKind::Primary)) screenshot::RequestSnapshot();
+        if (eam::ui::Button(busy ? "正在截取..." : "截取快照", eam::ui::icons::kCheck, eam::ui::ButtonKind::Primary)) screenshot::RequestSnapshot();
         if (busy) ImGui::EndDisabled();
-        Tip("A picture of the game as it is shown now, to draw the areas on. The game must be running and scaled. Take another one any time.");
+        Tip("游戏当前显示画面的一张快照，用于在其上绘制区域。游戏必须正在运行且正在缩放。随时可以再截一张。");
         ImGui::SameLine();
-        { bool show = g_showHud; if (ImGui::Checkbox("Show the areas in the game", &show)) g_showHud = show; }
-        Tip("Tints and outlines the areas in green in the game itself, to check them against your HUD. Not saved: turn it off when you are done.");
+        { bool show = g_showHud; if (ImGui::Checkbox("在游戏中显示区域", &show)) g_showHud = show; }
+        Tip("在游戏内把这些区域染成绿色并描边，方便对照你的 HUD。不会保存：调整完请关闭。");
         ImGui::Dummy(ImVec2(0, ImGui::GetFontSize() * 0.3f));
         changed |= DrawHudEditor(c.p);
-        Note("Drag on the picture to add an area (six at most). Drag an area to move it, an edge or corner to resize it. Right-click an area to remove it.");
-        changed |= SL("Edge softness", &c.p.hudFeather, 0.0f, 0.05f, c.p.hudFeather <= 0.0005f ? "hard edge" : "%.3f");
-        Tip("How gradually the enhancement fades in outside an area, as a fraction of the screen. 0 = a hard edge.");
-        if (ImGui::SmallButton("WoW starter layout")) {
+        Note("在画面上拖动即可添加区域（最多六个）。拖动区域可移动它，拖动边或角可调整大小。右键点击区域可删除。");
+        changed |= SL("边缘柔化", &c.p.hudFeather, 0.0f, 0.05f, c.p.hudFeather <= 0.0005f ? "硬边缘" : "%.3f");
+        Tip("区域之外增强效果渐入的平缓程度，以屏幕比例计。0 = 硬边缘。");
+        if (ImGui::SmallButton("WoW 初始布局")) {
             const float d[4][4] = { { 0.0f, 0.0f, 0.30f, 0.17f }, { 0.86f, 0.0f, 1.0f, 0.24f }, { 0.0f, 0.70f, 0.26f, 1.0f }, { 0.27f, 0.88f, 0.73f, 1.0f } };
             memcpy(c.p.hud, d, sizeof d); c.p.hudCount = 4; changed = true;
         }
-        Tip("Four areas where World of Warcraft's default interface sits: unit frames (top left), minimap (top right), chat (bottom left) and the action bars (bottom centre). A starting point to adjust on the snapshot.");
-        if (c.p.hudCount) { ImGui::SameLine(); if (ImGui::SmallButton("Clear all")) { c.p.hudCount = 0; changed = true; } }
-        if (c.p.hudCount && ImGui::TreeNode("Exact numbers")) {
+        Tip("对应《魔兽世界》默认界面位置的四个区域：头像框（左上）、小地图（右上）、聊天（左下）和动作条（下中）。作为在快照上调整的起点。");
+        if (c.p.hudCount) { ImGui::SameLine(); if (ImGui::SmallButton("全部清除")) { c.p.hudCount = 0; changed = true; } }
+        if (c.p.hudCount && ImGui::TreeNode("精确数值")) {
             for (uint32_t i = 0; i < c.p.hudCount; ++i) {
                 ImGui::PushID(static_cast<int>(i));
                 float* r = c.p.hud[i];
-                ImGui::Text("Area %u", i + 1);
-                changed |= eam::ui::SliderFloat("Left", &r[0], 0.0f, 0.99f); changed |= eam::ui::SliderFloat("Top", &r[1], 0.0f, 0.99f);
-                changed |= eam::ui::SliderFloat("Right", &r[2], 0.01f, 1.0f); changed |= eam::ui::SliderFloat("Bottom", &r[3], 0.01f, 1.0f);
+                ImGui::Text("区域 %u", i + 1);
+                changed |= eam::ui::SliderFloat("左", &r[0], 0.0f, 0.99f); changed |= eam::ui::SliderFloat("上", &r[1], 0.0f, 0.99f);
+                changed |= eam::ui::SliderFloat("右", &r[2], 0.01f, 1.0f); changed |= eam::ui::SliderFloat("下", &r[3], 0.01f, 1.0f);
                 r[2] = std::max(r[2], r[0] + 0.01f); r[3] = std::max(r[3], r[1] + 0.01f);
                 ImGui::PopID();
             }
             ImGui::TreePop();
         }
-        Note("Areas are saved with the look, so each game can have its own layout.");
+        Note("区域随方案一起保存，每个游戏可以有自己的布局。");
     }
-    if (kScalerAddon && eam::ui::SectionHeader("Compare and hotkeys")) {   // the upscalers: the upscaled picture or NIS's, and the sharpening
-        int cm = g_compare.load() == 2 ? 1 : 0; const char* cms[] = { "Upscaled", "Lossless Scaling's NIS (before)" };
-        if (ImGui::Combo("Compare view", &cm, cms, 2)) g_compare = cm == 1 ? 2 : 0;
-        Tip("Upscaled = normal. Lossless Scaling's NIS = as if the addon were off, to compare (the upscaler stays loaded, so switching back is instant). Not saved.");
-        changed |= ImGui::Checkbox("Hotkeys: Ctrl+Shift + key (work while the game has focus and the upscaler runs)", &c.hotkeys);
-        Tip("Switch between the upscaler and NIS, and change the sharpening, from inside the game. The Ctrl+Shift pair keeps them away from the game's own key bindings.");
+    if (kScalerAddon && eam::ui::SectionHeader("对比与快捷键")) {   // the upscalers: the upscaled picture or NIS's, and the sharpening
+        int cm = g_compare.load() == 2 ? 1 : 0; const char* cms[] = { "上采样后", "Lossless Scaling 的 NIS（原画面）" };
+        if (ImGui::Combo("对比视图", &cm, cms, 2)) g_compare = cm == 1 ? 2 : 0;
+        Tip("上采样后 = 正常。Lossless Scaling 的 NIS = 如同插件关闭时的画面，用于对比（上采样器保持加载，切回即时生效）。不保存。");
+        changed |= ImGui::Checkbox("快捷键：Ctrl+Shift + 按键（游戏获得焦点且上采样器运行时生效）", &c.hotkeys);
+        Tip("在游戏内切换上采样器与 NIS、调整锐化。Ctrl+Shift 组合可避免与游戏自身按键绑定冲突。");
         auto fkey = [&](const char* label, int* vk) {
             int idx = *vk - VK_F1; if (idx < 0 || idx > 11) idx = 6;
             const char* names[] = { "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12" };
@@ -742,28 +742,28 @@ void DrawPanel() {
             ImGui::SetNextItemWidth(ImGui::CalcTextSize("F12").x + st.FramePadding.x * 2.0f + ImGui::GetFrameHeight() + st.ItemInnerSpacing.x);
             if (ImGui::Combo(label, &idx, names, 12)) { *vk = VK_F1 + idx; changed = true; }
         };
-        fkey("Before / after", &c.keyAB); fkey("Sharpen -", &c.keySharpDn); fkey("Sharpen +", &c.keySharpUp);
-        fkey("Before / after pictures", &c.keyShot);
+        fkey("前后对比", &c.keyAB); fkey("锐化 -", &c.keySharpDn); fkey("锐化 +", &c.keySharpUp);
+        fkey("前后对比截图", &c.keyShot);
         auto fname = [](int vk) { static char b[4][8]; static int n = 0; char* o = b[n++ & 3]; snprintf(o, 8, "F%d", vk - VK_F1 + 1); return (const char*)o; };
-        Note("Now: Ctrl+Shift+%s before/after  |  %s / %s sharpen - / +  |  %s before/after pictures  (%s)", fname(c.keyAB),
-             fname(c.keySharpDn), fname(c.keySharpUp), fname(c.keyShot), c.hotkeys ? "hotkeys on" : "hotkeys OFF: tick the box above");
-        if (ImGui::SmallButton("Save before / after pictures")) RequestPair();
-        Tip("Two PNGs of the same moment: the upscaled picture and Lossless Scaling's NIS (one frame of NIS shows on screen while it is taken). "
-            "Windows' own screenshots show the game's window, not Lossless Scaling's picture. HDR games are saved in their SDR view.");
+        Note("当前：Ctrl+Shift+%s 前后对比  |  %s / %s 锐化 - / +  |  %s 前后对比截图  (%s)", fname(c.keyAB),
+             fname(c.keySharpDn), fname(c.keySharpUp), fname(c.keyShot), c.hotkeys ? "快捷键已开启" : "快捷键已关闭：请勾选上方复选框");
+        if (ImGui::SmallButton("保存前后对比截图")) RequestPair();
+        Tip("同一时刻的两张 PNG：上采样画面与 Lossless Scaling 的 NIS（拍摄时会显示一帧 NIS）。"
+            "Windows 自带截图截取的是游戏窗口，不是 Lossless Scaling 的画面。HDR 游戏按其 SDR 视图保存。");
         ImGui::SameLine();
-        if (ImGui::SmallButton("Open the pictures folder")) ShellExecuteW(nullptr, L"open", screenshot::Folder().c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+        if (ImGui::SmallButton("打开截图文件夹")) ShellExecuteW(nullptr, L"open", screenshot::Folder().c_str(), nullptr, nullptr, SW_SHOWNORMAL);
         { bool ok; const std::string msg = screenshot::LastResult(ok);
           if (!msg.empty()) { ImGui::PushStyleColor(ImGuiCol_Text, ok ? eam::ui::theme::V(eam::ui::theme::kAccent) : eam::ui::theme::V(eam::ui::theme::kWarn)); ImGui::TextWrapped("%s", msg.c_str()); ImGui::PopStyleColor(); } }
     }
-    if (!kScalerAddon && eam::ui::SectionHeader("Compare and hotkeys")) {
-        int cm = g_compare; const char* cms[] = { "Enhanced", "Split: left original | right enhanced", "Original only (before)" };
-        if (ImGui::Combo("Compare view", &cm, cms, 3)) g_compare = cm;
-        Tip("Enhanced = normal. Split = left of the line is the original, right is enhanced. Original only = as if the addon were off (it saves the compose work but the model keeps running). Display only; not saved.");
-        float sp = g_splitPos; { const float dsp = 0.5f; if (eam::ui::SliderFloat("Split position", &sp, 0.05f, 0.95f, "%.2f", 0, &dsp)) g_splitPos = sp; }
-        Tip("Where the split line sits, from the left edge (0) to the right edge (1) of the screen.");
-        Note("Display only: the model keeps running, so switching is instant. Not saved: Lossless Scaling always starts enhanced.");
-        changed |= ImGui::Checkbox("Hotkeys: Ctrl+Shift + key (work while the game has focus)", &c.hotkeys);
-        Tip("Switch the compare view, sharpen and presets from inside the game. They are read while Lossless Scaling is presenting frames. The Ctrl+Shift pair keeps them away from the game's own key bindings.");
+    if (!kScalerAddon && eam::ui::SectionHeader("对比与快捷键")) {
+        int cm = g_compare; const char* cms[] = { "增强后", "分割：左原画面 | 右增强后", "仅原画面（对比用）" };
+        if (ImGui::Combo("对比视图", &cm, cms, 3)) g_compare = cm;
+        Tip("增强后 = 正常。分割 = 线左侧为原画面，右侧为增强后。仅原画面 = 如同插件关闭（省去合成工作，但模型继续运行）。仅显示用；不保存。");
+        float sp = g_splitPos; { const float dsp = 0.5f; if (eam::ui::SliderFloat("分割位置", &sp, 0.05f, 0.95f, "%.2f", 0, &dsp)) g_splitPos = sp; }
+        Tip("分割线的位置，从屏幕左缘（0）到右缘（1）。");
+        Note("仅显示用：模型继续运行，切换即时生效。不保存：Lossless Scaling 总是以增强后启动。");
+        changed |= ImGui::Checkbox("快捷键：Ctrl+Shift + 按键（游戏获得焦点时生效）", &c.hotkeys);
+        Tip("在游戏内切换对比视图、锐化和预设。它们在 Lossless Scaling 呈现帧时被读取。Ctrl+Shift 组合可避免与游戏自身按键绑定冲突。");
         auto fkey = [&](const char* label, int* vk) {
             int idx = *vk - VK_F1; if (idx < 0 || idx > 11) idx = 6;
             const char* names[] = { "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12" };
@@ -772,47 +772,47 @@ void DrawPanel() {
             ImGui::SetNextItemWidth(ImGui::CalcTextSize("F12").x + st.FramePadding.x * 2.0f + ImGui::GetFrameHeight() + st.ItemInnerSpacing.x);
             if (ImGui::Combo(label, &idx, names, 12)) { *vk = VK_F1 + idx; changed = true; }
         };
-        fkey("Before / after", &c.keyAB); fkey("Split view", &c.keySplit); fkey("Sharpen -", &c.keySharpDn); fkey("Sharpen +", &c.keySharpUp); fkey("Next preset", &c.keyPreset);
-        fkey("Screenshot", &c.keyShot);
+        fkey("前后对比", &c.keyAB); fkey("分割视图", &c.keySplit); fkey("锐化 -", &c.keySharpDn); fkey("锐化 +", &c.keySharpUp); fkey("下一个预设", &c.keyPreset);
+        fkey("截图", &c.keyShot);
         auto fname = [](int vk) { static char b[8][8]; static int n = 0; char* o = b[n++ & 7]; snprintf(o, 8, "F%d", vk - VK_F1 + 1); return (const char*)o; };
-        Note("Now: Ctrl+Shift+%s before/after  |  %s split  |  %s / %s sharpen - / +  |  %s next preset  |  %s screenshot  (%s)",
+        Note("当前：Ctrl+Shift+%s 前后对比  |  %s 分割  |  %s / %s 锐化 - / +  |  %s 下一个预设  |  %s 截图  (%s)",
             fname(c.keyAB), fname(c.keySplit), fname(c.keySharpDn), fname(c.keySharpUp), fname(c.keyPreset), fname(c.keyShot),
-            c.hotkeys ? "hotkeys on" : "hotkeys OFF: tick the box above");
-        Note("A small square appears in the screen's top-left corner for a moment: green enhanced, red original, amber split, blue sharpen changed, purple preset.");
+            c.hotkeys ? "快捷键已开启" : "快捷键已关闭：请勾选上方复选框");
+        Note("屏幕左上角会短暂出现一个小方块：绿色为增强后，红色为原画面，琥珀色为分割，蓝色为锐化已更改，紫色为预设。");
     }
-    if (!kScalerAddon && eam::ui::SectionHeader("Screenshots")) {
-        Note("Saves the picture as you see it, with the addon's result, the scaling and frame generation in it, as a PNG. It is taken at the next frame Lossless Scaling shows, so the game must be running and scaled.");
+    if (!kScalerAddon && eam::ui::SectionHeader("截图")) {
+        Note("按你所见保存画面（包含插件的效果、缩放和帧生成）为 PNG。它在 Lossless Scaling 显示的下一帧拍摄，所以游戏必须正在运行且正在缩放。");
         const bool busy = screenshot::Busy();
         if (busy) ImGui::BeginDisabled();
-        if (eam::ui::Button(busy ? "Taking it..." : "Take a screenshot", eam::ui::icons::kCheck, eam::ui::ButtonKind::Primary)) screenshot::Request();
+        if (eam::ui::Button(busy ? "正在截图..." : "截图", eam::ui::icons::kCheck, eam::ui::ButtonKind::Primary)) screenshot::Request();
         if (busy) ImGui::EndDisabled();
-        Tip("The picture as you see it, one PNG.");
+        Tip("所见画面，一张 PNG。");
         ImGui::SameLine();
-        if (eam::ui::Button("Save before / after pictures", eam::ui::icons::kCheck)) RequestPair();
-        Tip("Two PNGs of the same moment, \"_NR\" with the addon's result and \"_original\" without it (one frame of the original shows while it is "
-            "taken). In the game, Ctrl+Shift + the Screenshot key (see Compare and hotkeys) does this. HDR games are saved in their SDR view.");
+        if (eam::ui::Button("保存前后对比截图", eam::ui::icons::kCheck)) RequestPair();
+        Tip("同一时刻的两张 PNG：\"_NR\" 带插件效果，\"_original\" 不带（拍摄时会显示一帧原画面）。"
+            "在游戏中按 Ctrl+Shift + 截图键（见对比与快捷键一节）亦可。HDR 游戏按其 SDR 视图保存。");
         const std::wstring folder = screenshot::Folder();
         const int size = WideCharToMultiByte(CP_UTF8, 0, folder.c_str(), -1, nullptr, 0, nullptr, nullptr);
         std::string folderText(size > 0 ? size - 1 : 0, '\0');
         if (size > 1) WideCharToMultiByte(CP_UTF8, 0, folder.c_str(), -1, folderText.data(), size, nullptr, nullptr);
-        ImGui::TextWrapped("Folder: %s", folderText.c_str());
+        ImGui::TextWrapped("文件夹：%s", folderText.c_str());
         const bool choosing = screenshot::Choosing();
         if (choosing) ImGui::BeginDisabled();
-        if (ImGui::SmallButton(choosing ? "Waiting for the folder dialog..." : "Choose folder...")) screenshot::ChooseFolder();
+        if (ImGui::SmallButton(choosing ? "正在等待文件夹对话框..." : "选择文件夹...")) screenshot::ChooseFolder();
         if (choosing) ImGui::EndDisabled();
-        Tip("Where the screenshots go. The first time, a folder called Lossless Scaling in your Pictures folder.");
+        Tip("截图的存放位置。第一次是“图片”文件夹下名为 Lossless Scaling 的文件夹。");
         ImGui::SameLine();
-        if (ImGui::SmallButton("Open folder")) { CreateDirectoryW(folder.c_str(), nullptr); ShellExecuteW(nullptr, L"open", folder.c_str(), nullptr, nullptr, SW_SHOWNORMAL); }
-        if (!c.screenshotFolder.empty()) { ImGui::SameLine(); if (ImGui::SmallButton("Use Pictures again")) { c.screenshotFolder.clear(); changed = true; } }
+        if (ImGui::SmallButton("打开文件夹")) { CreateDirectoryW(folder.c_str(), nullptr); ShellExecuteW(nullptr, L"open", folder.c_str(), nullptr, nullptr, SW_SHOWNORMAL); }
+        if (!c.screenshotFolder.empty()) { ImGui::SameLine(); if (ImGui::SmallButton("改用“图片”文件夹")) { c.screenshotFolder.clear(); changed = true; } }
         bool ok; const std::string result = screenshot::LastResult(ok);
         if (!result.empty()) { ImGui::PushStyleColor(ImGuiCol_Text, ok ? eam::ui::theme::V(eam::ui::theme::kAccent) : eam::ui::theme::V(eam::ui::theme::kWarn)); ImGui::TextWrapped("%s", result.c_str()); ImGui::PopStyleColor(); }
     }
-    if (!kScalerAddon && eam::ui::SectionHeader("Games (a look per program)")) {
+    if (!kScalerAddon && eam::ui::SectionHeader("游戏（每个程序一套方案）")) {
         std::string cur; { std::lock_guard<std::mutex> lk(g_textMutex); cur = g_focusExe; }
-        ImGui::Text("Program in focus: %s", cur.empty() ? "(none seen yet)" : cur.c_str());
-        Tip("The program that had focus most recently, ignoring Lossless Scaling's own windows. While a game is being scaled this is the game.");
-        changed |= ImGui::Checkbox("Switch to a program's saved look when it takes focus", &c.gameAuto);
-        Tip("When a program listed below takes focus, its preset is applied automatically (once per change of program, so your own tweaks after that stay). A preset with a different working scale makes the model rebuild for a moment.");
+        ImGui::Text("焦点程序：%s", cur.empty() ? "（尚未见到程序）" : cur.c_str());
+        Tip("最近获得焦点的程序，忽略 Lossless Scaling 自己的窗口。游戏正在缩放时即为该游戏。");
+        changed |= ImGui::Checkbox("程序获得焦点时切换到其保存的方案", &c.gameAuto);
+        Tip("下方列出的程序获得焦点时，自动应用其方案（每次切换程序只应用一次，之后你自己的微调会保留）。方案的模型分辨率不同会让模型重建片刻。");
         std::vector<std::string> names; { std::lock_guard<std::mutex> lk(g_settingsMutex); for (auto& pr : g_looks) names.push_back(pr.name); }
         int rmg = -1;
         for (size_t i = 0; i < c.games.size(); ++i) {
@@ -823,31 +823,31 @@ void DrawPanel() {
                 for (auto& n : names) if (ImGui::Selectable(n.c_str(), n == c.games[i].second)) { c.games[i].second = n; changed = true; }
                 ImGui::EndCombo();
             }
-            ImGui::SameLine(); if (ImGui::SmallButton("Forget")) rmg = (int)i;
+            ImGui::SameLine(); if (ImGui::SmallButton("清除")) rmg = (int)i;
             ImGui::PopID();
         }
         if (rmg >= 0) { ForgetGame(g_host, kAddonId, c.games[rmg].first); c.games.erase(c.games.begin() + rmg); changed = true; }
-        if (c.games.empty()) ImGui::TextDisabled("No programs yet.");
+        if (c.games.empty()) ImGui::TextDisabled("还没有程序。");
         static char exeBuf[64] = ""; static int addSel = 0;
-        ImGui::InputText("Program (exe name)", exeBuf, sizeof exeBuf);
-        Tip("For example WowB.exe. Matching ignores upper and lower case.");
-        ImGui::SameLine(); if (ImGui::SmallButton("Use program in focus") && !cur.empty()) snprintf(exeBuf, sizeof exeBuf, "%s", cur.c_str());
+        ImGui::InputText("程序（exe 名称）", exeBuf, sizeof exeBuf);
+        Tip("例如 WowB.exe。匹配不区分大小写。");
+        ImGui::SameLine(); if (ImGui::SmallButton("使用焦点程序") && !cur.empty()) snprintf(exeBuf, sizeof exeBuf, "%s", cur.c_str());
         if (addSel >= (int)names.size()) addSel = 0;
         ImGui::SetNextItemWidth(ImGui::GetFontSize() * 12.0f);
-        if (ImGui::BeginCombo("Look to use", names.empty() ? "(save a preset first)" : names[addSel].c_str())) {
+        if (ImGui::BeginCombo("使用的方案", names.empty() ? "（请先保存一个方案）" : names[addSel].c_str())) {
             for (int i = 0; i < (int)names.size(); ++i) if (ImGui::Selectable(names[i].c_str(), i == addSel)) addSel = i;
             ImGui::EndCombo();
         }
         ImGui::SameLine();
-        if (ImGui::SmallButton("Add") && exeBuf[0] && !names.empty()) {
+        if (ImGui::SmallButton("添加") && exeBuf[0] && !names.empty()) {
             std::string e = exeBuf; for (char& ch : e) ch = (char)tolower((unsigned char)ch);
             e = CleanName(e); bool found = false;
             for (auto& g : c.games) if (g.first == e) { g.second = names[addSel]; found = true; }
             if (!found && !e.empty()) c.games.push_back({ e, names[addSel] });
             changed = true;
         }
-        Tip("Use the chosen saved look whenever this program takes focus.");
-        if (ImGui::Button("Save the current look for the program in focus") && !cur.empty()) {
+        Tip("该程序每次获得焦点时，使用所选的保存方案。");
+        if (ImGui::Button("为焦点程序保存当前方案") && !cur.empty()) {
             std::string base = cur; const size_t dot = base.rfind('.'); if (dot != std::string::npos && dot > 0) base.resize(dot);
             const std::string n = CleanName(base); const std::string d = LookToText(c.p);
             { std::lock_guard<std::mutex> lk(g_settingsMutex); bool found = false; for (auto& pr : g_looks) if (pr.name == n) { pr.data = d; found = true; } if (!found) g_looks.push_back({ n, d }); }
@@ -855,18 +855,18 @@ void DrawPanel() {
             if (!found) c.games.push_back({ cur, n });
             changed = true;
         }
-        Tip("Stores everything you have set now (including the HUD areas) as a preset named after the program, and links the program to it.");
+        Tip("把你现在设置的全部内容（包括 HUD 区域）存为以该程序命名的方案，并把该程序与它关联。");
     }
-    if (eam::ui::SectionHeader("Frame detection (advanced)")) {
-        Note("How the addon recognises Lossless Scaling's new real frame. Auto works; change this only if the status stays stuck on waiting.");
+    if (eam::ui::SectionHeader("帧检测（高级）")) {
+        Note("插件如何识别 Lossless Scaling 的新真实帧。自动通常可用；仅当状态一直卡在等待时才修改此项。");
         const int modeBefore = c.tapMode;
-        if (ImGui::RadioButton("Auto", c.tapMode == 0)) c.tapMode = 0;
+        if (ImGui::RadioButton("自动", c.tapMode == 0)) c.tapMode = 0;
         ImGui::SameLine();
-        if (ImGui::RadioButton("Manual", c.tapMode == 1)) c.tapMode = 1;
+        if (ImGui::RadioButton("手动", c.tapMode == 1)) c.tapMode = 1;
         tapChanged |= c.tapMode != modeBefore;
-        const char* slotNames[] = { "auto (highest)", "S0", "S1", "S2", "S3", "S4", "S5", "S6", "S7" };
+        const char* slotNames[] = { "自动（最高）", "S0", "S1", "S2", "S3", "S4", "S5", "S6", "S7" };
         int slot = c.frameSlot + 1;
-        if (ImGui::Combo("Frame slot", &slot, slotNames, 9)) { c.frameSlot = slot - 1; tapChanged = true; }
+        if (ImGui::Combo("帧槽位", &slot, slotNames, 9)) { c.frameSlot = slot - 1; tapChanged = true; }
         DispatchSig tick, tap;
         g_tap.GetRoles(tick, tap);
         auto role = [](const char* name, const DispatchSig& sig) {
@@ -874,15 +874,15 @@ void DrawPanel() {
         };
         role("TICK:", tick);
         role("TAP: ", tap);
-        if (ImGui::SmallButton("Clear table")) g_tap.ClearTable();
+        if (ImGui::SmallButton("清空表格")) g_tap.ClearTable();
         ImGui::SameLine();
-        if (ImGui::SmallButton("Clear roles")) { c.tickSig.clear(); c.tapSig.clear(); tapChanged = true; }
+        if (ImGui::SmallButton("清空角色")) { c.tickSig.clear(); c.tapSig.clear(); tapChanged = true; }
         // the passes seen, busiest first; either can be made the TAP or the TICK by hand
         std::vector<DispatchEntry> passes = g_tap.Snapshot();
         std::sort(passes.begin(), passes.end(), [](const DispatchEntry& a, const DispatchEntry& b) { return a.count > b.count; });
         if (passes.size() > 24) passes.resize(24);
         if (ImGui::BeginTable("passes", 5, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {
-            for (const char* column : { "count", "groups", "views", "auto", "use" }) ImGui::TableSetupColumn(column);
+            for (const char* column : { "次数", "组", "视图", "自动", "指派" }) ImGui::TableSetupColumn(column);
             ImGui::TableHeadersRow();
             for (const DispatchEntry& pass : passes) {
                 ImGui::TableNextRow();
@@ -900,31 +900,31 @@ void DrawPanel() {
             ImGui::EndTable();
         }
     }
-    if (eam::ui::SectionHeader("Technical status")) {
-    ImGui::Text("last LS device: %s %s   engine: %s", adapterName.c_str(), hasDisplay ? "(drives a display)" : "(no display output)",
-                kScalerAddon ? ScalerEngineText().c_str() : g_engineCardKnown ? "on the LSFG device" : "not started");
-    ImGui::Text("frame: %s   NR %.1f ms (avg %.1f)  run %.1f ms   runs %llu   fails %llu", frameInfo.c_str(), g_lastModelMs, g_avgModelMs, g_lastRunMs, (unsigned long long)g_runs, (unsigned long long)g_engine.Stats().fails);
-    ImGui::Text("dispatches %llu  ticks %llu  taps %llu  gate:%s  float-slot %d", (unsigned long long)g_tap.Dispatches(), (unsigned long long)g_tap.Ticks(), (unsigned long long)g_tap.Taps(), g_tap.GateName(), g_engine.Stats().floatSlot);
+    if (eam::ui::SectionHeader("技术状态")) {
+    ImGui::Text("上一个 LS 设备：%s %s   引擎：%s", adapterName.c_str(), hasDisplay ? "（驱动显示器）" : "（无显示输出）",
+                kScalerAddon ? ScalerEngineText().c_str() : g_engineCardKnown ? "在 LSFG 设备上" : "未启动");
+    ImGui::Text("帧：%s   NR %.1f ms（平均 %.1f）  本次 %.1f ms   运行 %llu 次   失败 %llu 次", frameInfo.c_str(), g_lastModelMs, g_avgModelMs, g_lastRunMs, (unsigned long long)g_runs, (unsigned long long)g_engine.Stats().fails);
+    ImGui::Text("分发 %llu  TICK %llu  TAP %llu  门控：%s  浮点槽 %d", (unsigned long long)g_tap.Dispatches(), (unsigned long long)g_tap.Ticks(), (unsigned long long)g_tap.Taps(), g_tap.GateName(), g_engine.Stats().floatSlot);
     { std::string tdi; { std::lock_guard<std::mutex> lk(g_textMutex); tdi = g_tappedDeviceText; }
-      ImGui::Text("passes seen: %llu   other-adapter passes: %llu   tapped device: %s", (unsigned long long)g_tap.Dispatches(), (unsigned long long)g_otherPasses, tdi.c_str()); }
+      ImGui::Text("已见处理趟：%llu   其他适配器处理趟：%llu   截取设备：%s", (unsigned long long)g_tap.Dispatches(), (unsigned long long)g_otherPasses, tdi.c_str()); }
     }
-    if (eam::ui::SectionHeader("Advanced")) {
-        int dv = (int)c.p.debugView; const char* views[] = { "Result", "Original", "Delta x4", "Frame role (green real, red generated)", "LSFG flow", "Ghost guard (white = full effect)" };
-        if (ImGui::Combo("Diagnostic view", &dv, views, 6)) { c.p.debugView = dv; changed = true; }
-        Tip("Shows what the addon is doing instead of the finished picture: the original frame, the model's change amplified 4x, which frames are real or generated, or the motion data. Leave on Result for normal use.");
-        changed |= SL("Slow-model watchdog (ms)", &c.watchdogMs, 20.0f, 200.0f, "%.0f");
-        Tip("If the model takes longer than this for 30 frames in a row, the addon switches itself off so it can never hurt your frame rate. It re-arms itself after 10 seconds, up to three times per session.");
+    if (eam::ui::SectionHeader("高级")) {
+        int dv = (int)c.p.debugView; const char* views[] = { "结果", "原画面", "增量 x4", "帧角色（绿=真实帧，红=生成帧）", "LSFG 光流", "残影防护（白色=完全生效）" };
+        if (ImGui::Combo("诊断视图", &dv, views, 6)) { c.p.debugView = dv; changed = true; }
+        Tip("显示插件正在做什么而非成品画面：原帧、放大 4 倍的模型修改、哪些帧是真实或生成的、或运动数据。正常使用请留在“结果”。");
+        changed |= SL("慢模型看门狗（ms）", &c.watchdogMs, 20.0f, 200.0f, "%.0f");
+        Tip("若模型连续 30 帧超过此时长，插件会自行关闭，绝不会拖累你的帧率。10 秒后自动重新启用，每次会话最多三次。");
         char sp[512]; strncpy(sp, c.snippetPath.c_str(), sizeof sp); sp[sizeof sp - 1] = 0;
-        if (ImGui::InputText("Model file path (blank = Lossless Scaling folder)", sp, sizeof sp)) { c.snippetPath = sp; changed = true; }
+        if (ImGui::InputText("模型文件路径（留空 = Lossless Scaling 文件夹）", sp, sizeof sp)) { c.snippetPath = sp; changed = true; }
         if (ImGui::IsItemDeactivatedAfterEdit()) { { std::lock_guard<std::mutex> lk(g_settingsMutex); g_config.snippetPath = c.snippetPath; } ScanRequirements(); }
-        Tip("Full path to nvngx_dlssnr.dll. Leave blank to use the copy next to LosslessScaling.exe.");
-        if (ImGui::SmallButton("Restart engine")) { SwitchOn(); RestartEngine(); }
-        Tip("Tear the model down and start it again on the graphics card Lossless Scaling is using.");
+        Tip("nvngx_dlssnr.dll 的完整路径。留空则使用 LosslessScaling.exe 旁边的副本。");
+        if (ImGui::SmallButton("重启引擎")) { SwitchOn(); RestartEngine(); }
+        Tip("拆掉模型并在 Lossless Scaling 正在使用的显卡上重新启动。");
         ImGui::SameLine();
-        if (ImGui::SmallButton("Dump flow probe (3 frames)")) g_tap.ArmProbe(g_lsDir);
-        Tip("Diagnostic: writes the next three frames and Lossless Scaling's motion data to files in its folder.");
+        if (ImGui::SmallButton("导出光流探测（3 帧）")) g_tap.ArmProbe(g_lsDir);
+        Tip("诊断用：把接下来三帧和 Lossless Scaling 的运动数据写入其文件夹中的文件。");
         { std::string ps = g_tap.ProbeStatus(); if (ps != "idle") ImGui::TextWrapped("%s", ps.c_str()); }
-        Note("present hook: %s, %u presents seen in the process   log: <LS folder>\\logs\\DLSS5NR01.log", PresentHook::Installed() ? "installed" : "not yet", PresentHook::Hits());
+        Note("present 挂钩：%s，进程中已见 %u 次呈现   日志：<LS 文件夹>\\logs\\DLSS5NR01.log", PresentHook::Installed() ? "已安装" : "尚未安装", PresentHook::Hits());
     }
 
     if (changed || createChanged || tapChanged) Commit(c, tapChanged, createChanged);
