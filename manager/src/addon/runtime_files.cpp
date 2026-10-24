@@ -304,20 +304,20 @@ std::string RuntimeFileTitle(const std::wstring& path) {
 
 bool AddRuntimeFile(const RuntimeFile& slot, const std::wstring& source, std::wstring& added, std::string& error) {
     std::vector<std::string> exports;
-    if (!ReadDllExports(source, exports)) { error = "That's not a 64-bit DLL, so it can't be a " + slot.label + " file."; return false; }
+    if (!ReadDllExports(source, exports)) { error = "这不是 64 位 DLL，不能作为 " + slot.label + " 文件。"; return false; }
     for (const std::string& need : slot.exportsNeeded)
         if (std::find(exports.begin(), exports.end(), need) == exports.end()) {
-            error = "That's not a " + slot.label + " file: it doesn't have the functions " + slot.addonName + " needs.";
+            error = "这不是 " + slot.label + " 文件：缺少 " + slot.addonName + " 所需的函数。";
             return false;
         }
     const std::string sha = AddonSecurity::ComputeSHA256(source);
-    if (sha.size() < 8) { error = "The file could not be read."; return false; }
+    if (sha.size() < 8) { error = "无法读取该文件。"; return false; }
     const std::filesystem::path dir = std::filesystem::path(LibraryDir(slot)) / Wide(sha.substr(0, 8));
     const std::filesystem::path dest = dir / Wide(slot.FileName());
     std::error_code ec;
     if (std::filesystem::exists(dest, ec) && AddonSecurity::ComputeSHA256(dest.wstring()) == sha) { added = dest.wstring(); return true; }   // added before
     std::filesystem::create_directories(dir, ec);
-    if (!CopyFileW(source.c_str(), dest.c_str(), FALSE)) { error = "The file could not be copied (error " + std::to_string(GetLastError()) + ")."; return false; }
+    if (!CopyFileW(source.c_str(), dest.c_str(), FALSE)) { error = "无法复制该文件（错误 " + std::to_string(GetLastError()) + "）。"; return false; }
     added = dest.wstring();
     return true;
 }
@@ -331,14 +331,14 @@ void UseRuntimeFile(const RuntimeFile& slot, const std::wstring& path) {
 
 bool RemoveRuntimeFile(const RuntimeFile& slot, const std::wstring& path, std::string& error) {
     const std::filesystem::path dir = std::filesystem::path(path).parent_path();
-    if (_wcsicmp(dir.parent_path().wstring().c_str(), LibraryDir(slot).c_str()) != 0) { error = "Only files added here can be removed here."; return false; }
+    if (_wcsicmp(dir.parent_path().wstring().c_str(), LibraryDir(slot).c_str()) != 0) { error = "只能移除在这里添加的文件。"; return false; }
     SYSTEMTIME t; GetLocalTime(&t);
     wchar_t stamp[32]; swprintf(stamp, 32, L"-%04u%02u%02u-%02u%02u%02u", t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond);
     const std::filesystem::path aside = std::filesystem::path(slot.addonDir) / L"runtimes" / L".removed" / (Wide(slot.label) + L"-" + dir.filename().wstring() + stamp);
     std::error_code ec;
     std::filesystem::create_directories(aside.parent_path(), ec);
     if (!MoveFileExW(dir.c_str(), aside.c_str(), 0)) {
-        error = "It's in use right now: switch to another file, then remove it.";
+        error = "该文件正在使用中：请先切换到其他文件，再移除。";
         return false;
     }
     if (_wcsicmp(path.c_str(), slot.path.c_str()) == 0) UseRuntimeFile(slot, L"");   // it was the one in use: back to the default

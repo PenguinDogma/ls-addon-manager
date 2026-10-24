@@ -130,7 +130,7 @@ AddonManager::InstallResult AddonManager::InstallAddon(const std::wstring& sourc
     if (!Inspect(placed.dest, info)) {
         std::error_code ec;
         fs::remove_all(placed.dest, ec);   // the folder PlaceAddon just made, which holds nothing usable
-        result.message = "That addon has no DLL, so there is nothing to load.";
+        result.message = "该插件没有 DLL，没有可加载的内容。";
         return result;
     }
 
@@ -141,7 +141,7 @@ AddonManager::InstallResult AddonManager::InstallAddon(const std::wstring& sourc
 
     result.ok = true;
     result.id = info.id;
-    result.message = "Installed '" + info.GetDisplayName() + "' (switched off). Turn it on with its switch.";
+    result.message = "已安装 '" + info.GetDisplayName() + "'（默认关闭）。用它的开关打开即可。";
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         m_addons.push_back(std::move(info));
@@ -155,7 +155,7 @@ AddonManager::InstallResult AddonManager::InstallAddon(const std::wstring& sourc
 AddonManager::InstallResult AddonManager::RemoveAddon(int index) {
     InstallResult result;
     std::lock_guard<std::mutex> lock(m_mutex);
-    if (!InRange(m_addons, index)) { result.message = "That addon is no longer in the list."; return result; }
+    if (!InRange(m_addons, index)) { result.message = "该插件已不在列表中。"; return result; }
 
     AddonInfo& addon = m_addons[index];
     const std::string name = addon.GetDisplayName();
@@ -168,7 +168,7 @@ AddonManager::InstallResult AddonManager::RemoveAddon(int index) {
             return result;
         }
         UnloadModule(addon);
-        if (addon.IsLoaded()) { result.message = "Could not unload '" + name + "'; restart Lossless Scaling and try again."; return result; }
+        if (addon.IsLoaded()) { result.message = "无法卸载 '" + name + "'；请重启 Lossless Scaling 后重试。"; return result; }
     }
 
     const RemoveResult moved = MoveAddonToRemoved(fs::path(m_addonsPath) / addon.folderName, fs::path(m_addonsPath));
@@ -183,7 +183,7 @@ AddonManager::InstallResult AddonManager::RemoveAddon(int index) {
 
     result.ok = true;
     result.id = id;
-    result.message = "Removed '" + name + "'. Its folder is in addons/.removed (move it back to restore it); its settings are kept.";
+    result.message = "已移除 '" + name + "'。其文件夹已移入 addons/.removed（移回即可恢复），设置已保留。";
     LOG_INFO("AddonManager", "Removed addon '%s' -> %s", id.c_str(), WideToUtf8(moved.movedTo.wstring()).c_str());
     return result;
 }
@@ -234,7 +234,7 @@ void AddonManager::LoadModule(AddonInfo& addon) {
     HMODULE module = LoadLibraryExW(addon.dllPath.c_str(), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
     if (!module) module = LoadLibraryW(addon.dllPath.c_str());
     if (!module) {
-        addon.errorMessage = "LoadLibrary failed (error " + std::to_string(GetLastError()) + ")";
+        addon.errorMessage = "LoadLibrary 失败（错误 " + std::to_string(GetLastError()) + "）";
         LOG_ERROR("AddonManager", "Failed to load '%s': %s", addon.id.c_str(), addon.errorMessage.c_str());
         return;
     }
