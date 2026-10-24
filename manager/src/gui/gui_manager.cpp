@@ -101,10 +101,10 @@ void OnClose(HWND hwnd) {
 
     auto& cfg = ConfigManager::Instance();
     if (cfg.GlobalGetOr<bool>("ui", "hide_hint_shown", false)) return;
-    std::wstring text = L"Click its icon in the notification area";
-    if (window::hotkey::Registered()) text += L" or press " + window::hotkey::LabelFromConfig();
-    text += L" to open it again.";
-    window::tray::Balloon(L"The addon manager is still running", text.c_str());
+    std::wstring text = L"点击通知区域中的图标";
+    if (window::hotkey::Registered()) text += L"，或按 " + window::hotkey::LabelFromConfig();
+    text += L" 即可重新打开。";
+    window::tray::Balloon(L"插件管理器仍在运行", text.c_str());
     cfg.GlobalSet("ui", "hide_hint_shown", true);
     cfg.Save();
 }
@@ -189,7 +189,7 @@ LRESULT WINAPI WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 if (g.hidden) {   // nobody is looking at the window: say it from the notification area
                     wchar_t wide[256] = {};
                     MultiByteToWideChar(CP_UTF8, 0, notice.c_str(), -1, wide, 255);
-                    window::tray::Balloon(L"A new version is available", wide);
+                    window::tray::Balloon(L"有新版本可用", wide);
                 }   // with the window shown, the offer to update opens by itself (widgets::UpdateOffer)
             }
             return 0;
@@ -346,7 +346,7 @@ DWORD WINAPI GuiManager::GuiThread(LPVOID /*lpParam*/) {
             ImGui::ErrorRecoveryTryToRecoverState(&recovery);
             if (++g.frameFailures <= 3) {   // not every frame of a repeating problem
                 LOG_ERROR("GUI", "Drawing the window failed (%s); the window carries on", why.c_str());
-                widgets::ToastShow("Something went wrong in the manager window (see the Logs tab).", widgets::ToastType::Error, 6.0f);
+                widgets::ToastShow("管理器窗口出现问题（详见日志页）。", widgets::ToastType::Error, 6.0f);
             }
         }
         widgets::ToastRender();

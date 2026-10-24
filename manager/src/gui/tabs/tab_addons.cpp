@@ -53,8 +53,8 @@ static bool PickPath(bool folder, std::wstring& out) {
     if (SUCCEEDED(CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&dlg)))) {
         DWORD opts = 0; dlg->GetOptions(&opts);
         dlg->SetOptions(opts | FOS_FORCEFILESYSTEM | (folder ? FOS_PICKFOLDERS : 0));
-        if (!folder) { COMDLG_FILTERSPEC f[] = { { L"Addon (.zip or .dll)", L"*.zip;*.dll" }, { L"All files", L"*.*" } }; dlg->SetFileTypes(2, f); }
-        dlg->SetTitle(folder ? L"Choose an addon folder" : L"Choose an addon zip or DLL");
+        if (!folder) { COMDLG_FILTERSPEC f[] = { { L"插件（.zip 或 .dll）", L"*.zip;*.dll" }, { L"所有文件", L"*.*" } }; dlg->SetFileTypes(2, f); }
+        dlg->SetTitle(folder ? L"选择插件文件夹" : L"选择插件 zip 或 DLL");
         if (SUCCEEDED(dlg->Show(GetActiveWindow()))) {
             IShellItem* item = nullptr;
             if (SUCCEEDED(dlg->GetResult(&item))) {
@@ -108,17 +108,17 @@ static void SaveConfigFile() {
         file << s_cfgBuf.data();
         file.flush();
         if (!file) {
-            widgets::ToastShow("Could not write the config file", widgets::ToastType::Error);
+            widgets::ToastShow("无法写入配置文件", widgets::ToastType::Error);
             return;
         }
     }
     if (!MoveFileExW(tmp.c_str(), s_cfgPath.c_str(), MOVEFILE_REPLACE_EXISTING)) {
         DeleteFileW(tmp.c_str());
-        widgets::ToastShow("Could not replace the config file", widgets::ToastType::Error);
+        widgets::ToastShow("无法替换配置文件", widgets::ToastType::Error);
         return;
     }
     s_cfgDirty = false;
-    widgets::ToastShow("Config saved", widgets::ToastType::Success);
+    widgets::ToastShow("配置已保存", widgets::ToastType::Success);
 }
 
 // Lower case for the search box. Not ::tolower on plain chars: that is undefined for non-ASCII text (an addon named with an accented letter).
@@ -159,17 +159,17 @@ static void ApplyToggle(AddonManager* manager, int index, bool enable) {
     std::string also;   // the addons it cannot run beside, turned off
     for (const std::string& name : off) also += (also.empty() ? "" : ", ") + name;
     if (manager->GetAddons()[index].RequiresRestart()) {
-        widgets::ToastShow(enable ? "Restart Lossless Scaling to enable this addon"
-                                  : "Restart Lossless Scaling to disable this addon",
+        widgets::ToastShow(enable ? "重启 Lossless Scaling 以启用此插件"
+                                  : "重启 Lossless Scaling 以停用此插件",
                            widgets::ToastType::Warning, 5.0f);
     } else if (enable && !manager->GetAddons()[index].IsLoaded()) {
         const std::string& why = manager->GetAddons()[index].errorMessage;
-        widgets::ToastShow(why.empty() ? "Addon enabled, but it could not be loaded" : why,
+        widgets::ToastShow(why.empty() ? "插件已启用，但未能加载" : why,
                            widgets::ToastType::Error, 6.0f);
     } else if (!also.empty()) {
-        widgets::ToastShow("Addon enabled. Turned off " + also + ": the two cannot run at the same time.", widgets::ToastType::Success, 5.0f);
+        widgets::ToastShow("插件已启用。已关闭 " + also + "：它们无法同时运行。", widgets::ToastType::Success, 5.0f);
     } else {
-        widgets::ToastShow(enable ? "Addon enabled" : "Addon disabled",
+        widgets::ToastShow(enable ? "插件已启用" : "插件已停用",
                            enable ? widgets::ToastType::Success : widgets::ToastType::Info);
     }
 }
@@ -183,7 +183,7 @@ static void StatusText(const char* text, ImVec4 color) {
 static void RenderSettingsPane(AddonManager* manager, const AddonInfo& addon, int index) {
     ImGui::Dummy(ImVec2(0, S(4)));
     if (!addon.enabled) {
-        ImGui::TextDisabled("This addon is disabled. Turn it on (top right) to configure it.");
+        ImGui::TextDisabled("此插件已停用。请先开启（右上角）才能配置。");
         return;
     }
     if (!addon.IsLoaded()) {
@@ -194,12 +194,12 @@ static void RenderSettingsPane(AddonManager* manager, const AddonInfo& addon, in
             ImGui::Dummy(ImVec2(0, S(4)));
         }
         if (addon.RequiresRestart()) {
-            ImGui::TextWrapped("Restart Lossless Scaling to load this addon.");
+            ImGui::TextWrapped("重启 Lossless Scaling 以加载此插件。");
         } else {
-            ImGui::TextWrapped("This addon is enabled but not loaded.");
-            if (eam::ui::Button("Load now", eam::ui::icons::kPlay, eam::ui::ButtonKind::Primary)) {
+            ImGui::TextWrapped("此插件已启用但未加载。");
+            if (eam::ui::Button("立即加载", eam::ui::icons::kPlay, eam::ui::ButtonKind::Primary)) {
                 manager->LoadAddonNow(index);
-                widgets::ToastShow(manager->GetAddons()[index].IsLoaded() ? "Addon loaded" : "Could not load the addon",
+                widgets::ToastShow(manager->GetAddons()[index].IsLoaded() ? "插件已加载" : "无法加载插件",
                                    manager->GetAddons()[index].IsLoaded() ? widgets::ToastType::Success
                                                                           : widgets::ToastType::Error);
             }
@@ -211,8 +211,8 @@ static void RenderSettingsPane(AddonManager* manager, const AddonInfo& addon, in
     const float y0 = ImGui::GetCursorPosY();
     manager->RenderAddonSettings(index);
     if (ImGui::GetCursorPosY() == y0)
-        ImGui::TextWrapped("This addon did not draw any controls. Some addons only show settings while a game is "
-                           "being scaled; if it never does, check the Logs tab for errors.");
+        ImGui::TextWrapped("此插件未提供任何控件。部分插件仅在对游戏进行缩放时才显示设置；"
+                           "若始终没有显示，请到日志页查看错误。");
     ImGui::EndChild();
 }
 
@@ -223,7 +223,7 @@ static void RenderOverviewPane(AddonManager* manager, const AddonInfo& addon) {
     if (!addon.manifest.description.empty())
         ImGui::TextWrapped("%s", addon.manifest.description.c_str());
     else
-        ImGui::TextDisabled("No description.");
+        ImGui::TextDisabled("暂无描述。");
 
     if (!addon.manifest.tags.empty()) {
         ImGui::Dummy(ImVec2(0, S(8)));
@@ -238,23 +238,23 @@ static void RenderOverviewPane(AddonManager* manager, const AddonInfo& addon) {
 
     if (!addon.manifest.dependencies.empty()) {
         ImGui::Dummy(ImVec2(0, S(8)));
-        ImGui::TextDisabled("Dependencies");
+        ImGui::TextDisabled("依赖");
         for (const auto& dep : addon.manifest.dependencies) {
             const AddonInfo* found = nullptr;
             for (const auto& other : manager->GetAddons())
                 if (other.id == dep) { found = &other; break; }
             ImGui::BulletText("%s", dep.c_str());
             ImGui::SameLine();
-            if (!found)                    StatusText("(not installed)", ImVec4(0.816f, 0.502f, 0.502f, 1));
-            else if (!found->enabled)      StatusText("(disabled)", eam::ui::theme::V(eam::ui::theme::kWarn));
-            else                           ImGui::TextDisabled("(enabled)");
+            if (!found)                    StatusText("（未安装）", ImVec4(0.816f, 0.502f, 0.502f, 1));
+            else if (!found->enabled)      StatusText("（已停用）", eam::ui::theme::V(eam::ui::theme::kWarn));
+            else                           ImGui::TextDisabled("（已启用）");
         }
     }
 
     if (!addon.errorMessage.empty()) {
         ImGui::Dummy(ImVec2(0, S(8)));
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.816f, 0.502f, 0.502f, 1));
-        ImGui::TextWrapped("Error: %s", addon.errorMessage.c_str());
+        ImGui::TextWrapped("错误：%s", addon.errorMessage.c_str());
         ImGui::PopStyleColor();
     }
     ImGui::EndChild();
@@ -265,18 +265,18 @@ static void RenderConfigPane(const AddonInfo& addon) {
     if (s_cfgPath != addon.configPath) LoadConfigFile(addon.configPath);
 
     if (s_cfgTooBig) {
-        ImGui::TextWrapped("This file is larger than the editor can hold safely; open it in a text editor instead.");
+        ImGui::TextWrapped("此文件超出编辑器可安全容纳的大小，请改用文本编辑器打开。");
         return;
     }
-    if (eam::ui::Button("Save", eam::ui::icons::kSave, eam::ui::ButtonKind::Primary)) SaveConfigFile();
-    widgets::Tip("Write the text below to the addon's config file. Most addons read it only when they load, so a restart may be needed.");
+    if (eam::ui::Button("保存", eam::ui::icons::kSave, eam::ui::ButtonKind::Primary)) SaveConfigFile();
+    widgets::Tip("将下方文本写入插件的配置文件。多数插件仅在加载时读取，因此可能需要重启。");
     ImGui::SameLine();
-    if (eam::ui::Button("Reload", eam::ui::icons::kReset)) LoadConfigFile(addon.configPath);
-    widgets::Tip("Discard your edits and read the file again.");
+    if (eam::ui::Button("重新加载", eam::ui::icons::kReset)) LoadConfigFile(addon.configPath);
+    widgets::Tip("放弃当前修改并重新读取文件。");
     if (s_cfgDirty) {
         ImGui::SameLine();
         ImGui::PushStyleColor(ImGuiCol_Text, eam::ui::theme::V(eam::ui::theme::kWarn));
-        ImGui::TextUnformatted("unsaved changes");
+        ImGui::TextUnformatted("未保存的更改");
         ImGui::PopStyleColor();
     }
     ImGui::Dummy(ImVec2(0, S(2)));
@@ -303,7 +303,7 @@ static void RenderDetail(AddonManager* manager, AddonInfo& addon, int index) {
     ImGui::EndGroup();
     if (addon.OlderBuild(EAM_VERSION_STRING)) {   // a test build or an old file left in the folder: Setup replaces it
         ImGui::PushStyleColor(ImGuiCol_Text, eam::ui::theme::V(eam::ui::theme::kWarn));
-        ImGui::TextWrapped("This addon's file is version %s, older than the manager (%s): a test build or an old file left in the folder. Close Lossless Scaling and run Setup (Reinstall) to put the release's file back.", addon.dllVersion.c_str(), EAM_VERSION_STRING);
+        ImGui::TextWrapped("此插件的文件版本为 %s，低于管理器版本（%s）：可能是测试构建或残留的旧文件。请关闭 Lossless Scaling，运行安装程序（重新安装）以恢复正式版文件。", addon.dllVersion.c_str(), EAM_VERSION_STRING);
         ImGui::PopStyleColor();
     }
 
@@ -314,31 +314,31 @@ static void RenderDetail(AddonManager* manager, AddonInfo& addon, int index) {
     if (widgets::ToggleSwitch("##detail_enable", &enabled))
         ApplyToggle(manager, index, enabled);
     if (addon.manifest.wip) ImGui::EndDisabled();
-    widgets::Tip(addon.manifest.wip ? "Work in progress: this addon cannot be switched on yet."
-                                    : "Turn this addon on or off. It loads or unloads at once, unless it says it needs Lossless Scaling restarted.");
+    widgets::Tip(addon.manifest.wip ? "开发中：此插件暂无法开启。"
+                                    : "开启或关闭此插件。除非插件声明需要重启 Lossless Scaling，否则会立即加载或卸载。");
 
     // Status line.
     ImGui::Dummy(ImVec2(0, S(2)));
-    ImGui::TextDisabled("Status");
+    ImGui::TextDisabled("状态");
     ImGui::SameLine();
-    if (addon.faulted)            StatusText("Faulted", ImVec4(0.816f, 0.502f, 0.502f, 1));
-    else if (addon.IsLoaded())    StatusText("Loaded", eam::ui::theme::V(eam::ui::theme::kAccent));
-    else                          ImGui::TextDisabled("Unloaded");
+    if (addon.faulted)            StatusText("故障", ImVec4(0.816f, 0.502f, 0.502f, 1));
+    else if (addon.IsLoaded())    StatusText("已加载", eam::ui::theme::V(eam::ui::theme::kAccent));
+    else                          ImGui::TextDisabled("未加载");
 
     ImGui::SameLine(0, S(24));
-    ImGui::TextDisabled("Security");
+    ImGui::TextDisabled("安全性");
     ImGui::SameLine();
     switch (addon.security) {
-        case SecurityVerdict::Trusted:  StatusText("Trusted", eam::ui::theme::V(eam::ui::theme::kAccent)); break;
-        case SecurityVerdict::Tampered: StatusText("Tampered!", ImVec4(0.816f, 0.502f, 0.502f, 1)); break;
-        default:                        ImGui::TextDisabled("Unknown"); break;
+        case SecurityVerdict::Trusted:  StatusText("可信", eam::ui::theme::V(eam::ui::theme::kAccent)); break;
+        case SecurityVerdict::Tampered: StatusText("已被篡改！", ImVec4(0.816f, 0.502f, 0.502f, 1)); break;
+        default:                        ImGui::TextDisabled("未知"); break;
     }
 
     {   // remove, at the right end of the status line
-        const float rw = ImGui::CalcTextSize("Remove").x + ImGui::GetFontSize() * 3.2f;
+        const float rw = ImGui::CalcTextSize("移除").x + ImGui::GetFontSize() * 3.2f;
         ImGui::SameLine(ImGui::GetWindowWidth() - rw - ImGui::GetStyle().WindowPadding.x - S(4));
-        if (eam::ui::Button("Remove", eam::ui::icons::kTrash, eam::ui::ButtonKind::Danger)) { s_removeId = addon.id; s_askRemove = true; }
-        widgets::Tip("Take this addon out of Lossless Scaling. You are asked first. Its folder is moved to addons/.removed, not erased.");
+        if (eam::ui::Button("移除", eam::ui::icons::kTrash, eam::ui::ButtonKind::Danger)) { s_removeId = addon.id; s_askRemove = true; }
+        widgets::Tip("将此插件从 Lossless Scaling 中移除。操作前会先确认。其文件夹会被移到 addons/.removed，不会被删除。");
     }
 
     if (!addon.errorMessage.empty() && addon.IsLoaded()) {
@@ -348,7 +348,7 @@ static void RenderDetail(AddonManager* manager, AddonInfo& addon, int index) {
     }
     if (addon.RequiresRestart()) {
         ImGui::PushStyleColor(ImGuiCol_Text, eam::ui::theme::V(eam::ui::theme::kWarn));
-        ImGui::TextWrapped("This addon needs Lossless Scaling restarted to apply enable/disable changes.");
+        ImGui::TextWrapped("此插件需要重启 Lossless Scaling 才能应用启用/停用更改。");
         ImGui::PopStyleColor();
     }
     ImGui::Dummy(ImVec2(0, S(4)));
@@ -362,17 +362,17 @@ static void RenderDetail(AddonManager* manager, AddonInfo& addon, int index) {
     s_tabsOpenedFor = addon.id;
 
     if (ImGui::BeginTabBar("##detail_tabs")) {
-        if (hasSettings && ImGui::BeginTabItem("Settings", nullptr,
+        if (hasSettings && ImGui::BeginTabItem("设置", nullptr,
                                                firstShow ? ImGuiTabItemFlags_SetSelected : 0)) {
             RenderSettingsPane(manager, addon, index);
             ImGui::EndTabItem();
         }
-        if (ImGui::BeginTabItem("Overview", nullptr,
+        if (ImGui::BeginTabItem("概览", nullptr,
                                 (firstShow && !hasSettings) ? ImGuiTabItemFlags_SetSelected : 0)) {
             RenderOverviewPane(manager, addon);
             ImGui::EndTabItem();
         }
-        if (hasConfig && ImGui::BeginTabItem("Config")) {
+        if (hasConfig && ImGui::BeginTabItem("配置")) {
             RenderConfigPane(addon);
             ImGui::EndTabItem();
         }
@@ -404,65 +404,65 @@ void RenderTabAddons(AddonManager* manager) {
 
     if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_F)) ImGui::SetKeyboardFocusHere();   // Ctrl+F: jump to the search box
     ImGui::SetNextItemWidth(-1);
-    ImGui::InputTextWithHint("##addon_search", "Search (Ctrl+F)", s_searchBuffer, sizeof(s_searchBuffer));
-    widgets::Tip("Filter the list by name, author or tag.");
+    ImGui::InputTextWithHint("##addon_search", "搜索（Ctrl+F）", s_searchBuffer, sizeof(s_searchBuffer));
+    widgets::Tip("按名称、作者或标签筛选列表。");
     ImGui::Dummy(ImVec2(0, S(2)));
 
-    if (eam::ui::Button("Install addon", eam::ui::icons::kDownload, eam::ui::ButtonKind::Primary)) ImGui::OpenPopup("##install_menu");
-    widgets::Tip("Add an addon from a folder, a .zip or a .dll. It is copied into the addons folder and installed switched off. "
-                 "Dropping one onto this window works too.");
+    if (eam::ui::Button("安装插件", eam::ui::icons::kDownload, eam::ui::ButtonKind::Primary)) ImGui::OpenPopup("##install_menu");
+    widgets::Tip("从文件夹、.zip 或 .dll 添加插件。它会被复制到插件文件夹并以停用状态安装。"
+                 "也可以直接将其拖放到本窗口。");
     if (ImGui::BeginPopup("##install_menu")) {
         std::wstring picked;
-        if (ImGui::Selectable("From a folder...") && PickPath(true, picked)) { s_installSource = picked; s_askInstall = true; }
-        if (ImGui::Selectable("From a zip or DLL...") && PickPath(false, picked)) { s_installSource = picked; s_askInstall = true; }
+        if (ImGui::Selectable("从文件夹…") && PickPath(true, picked)) { s_installSource = picked; s_askInstall = true; }
+        if (ImGui::Selectable("从 zip 或 DLL…") && PickPath(false, picked)) { s_installSource = picked; s_askInstall = true; }
         ImGui::EndPopup();
     }
     ImGui::SameLine();
     if (eam::ui::IconButton("##open_folder", eam::ui::icons::kFolder, ImGui::GetFrameHeight())) ShellExecuteW(nullptr, L"open", manager->GetAddonsPath().c_str(), nullptr, nullptr, SW_SHOWNORMAL);
-    widgets::Tip("Open the folder the addons live in, to remove or update one by hand.");
+    widgets::Tip("打开插件所在的文件夹，可手动移除或更新插件。");
 
-    if (s_askInstall) { ImGui::OpenPopup("Install addon"); s_askInstall = false; }
-    if (ImGui::BeginPopupModal("Install addon", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+    if (s_askInstall) { ImGui::OpenPopup("安装插件"); s_askInstall = false; }
+    if (ImGui::BeginPopupModal("安装插件", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::PushTextWrapPos(ImGui::GetFontSize() * 32.0f);
-        ImGui::TextWrapped("Install this addon?");
+        ImGui::TextWrapped("安装此插件？");
         ImGui::TextDisabled("%s", WideToUtf8(s_installSource).c_str());
         ImGui::Dummy(ImVec2(0, S(4)));
-        ImGui::TextWrapped("An addon is a program that runs inside Lossless Scaling with the same access as Lossless Scaling itself. "
-                           "Only install addons from people you trust. It is installed switched off; you turn it on with its switch.");
+        ImGui::TextWrapped("插件是在 Lossless Scaling 内部运行的程序，拥有与 Lossless Scaling 本身相同的权限。"
+                           "请只安装来自可信来源的插件。插件安装后默认停用，可通过其开关开启。");
         ImGui::PopTextWrapPos();
         ImGui::Dummy(ImVec2(0, S(6)));
-        if (eam::ui::Button("Install", eam::ui::icons::kDownload, eam::ui::ButtonKind::Primary)) {
+        if (eam::ui::Button("安装", eam::ui::icons::kDownload, eam::ui::ButtonKind::Primary)) {
             const AddonManager::InstallResult r = manager->InstallAddon(s_installSource);
             widgets::ToastShow(r.message, r.ok ? widgets::ToastType::Success : widgets::ToastType::Error, 7.0f);
             if (r.ok) s_selectedId = r.id;
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();
-        if (eam::ui::Button("Cancel", eam::ui::icons::kClose)) ImGui::CloseCurrentPopup();
+        if (eam::ui::Button("取消", eam::ui::icons::kClose)) ImGui::CloseCurrentPopup();
         ImGui::EndPopup();
     }
-    if (s_askRemove) { ImGui::OpenPopup("Remove addon"); s_askRemove = false; }
-    if (ImGui::BeginPopupModal("Remove addon", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+    if (s_askRemove) { ImGui::OpenPopup("移除插件"); s_askRemove = false; }
+    if (ImGui::BeginPopupModal("移除插件", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         int ri = -1;
         for (int i = 0; i < (int)addons.size(); ++i) if (addons[i].id == s_removeId) ri = i;
-        if (ri < 0) { ImGui::TextUnformatted("That addon is already gone."); if (eam::ui::Button("Close")) ImGui::CloseCurrentPopup(); }
+        if (ri < 0) { ImGui::TextUnformatted("该插件已不存在。"); if (eam::ui::Button("关闭")) ImGui::CloseCurrentPopup(); }
         else {
             const std::string nm = addons[ri].GetDisplayName();
             ImGui::PushTextWrapPos(ImGui::GetFontSize() * 32.0f);
-            ImGui::TextWrapped("Remove %s?", nm.c_str());
+            ImGui::TextWrapped("移除 %s？", nm.c_str());
             ImGui::Dummy(ImVec2(0, S(4)));
-            ImGui::TextWrapped("It is switched off and its folder is moved to addons/.removed (nothing is erased; move the folder back to restore it). "
-                               "Its settings are kept, so installing it again brings them back.");
+            ImGui::TextWrapped("它将被停用，其文件夹会移动到 addons/.removed（不会删除任何内容；把文件夹移回即可恢复）。"
+                               "它的设置会保留，重新安装后即可沿用。");
             ImGui::PopTextWrapPos();
             ImGui::Dummy(ImVec2(0, S(6)));
-            if (eam::ui::Button("Remove", eam::ui::icons::kTrash, eam::ui::ButtonKind::Danger)) {
+            if (eam::ui::Button("移除", eam::ui::icons::kTrash, eam::ui::ButtonKind::Danger)) {
                 const AddonManager::InstallResult rr = manager->RemoveAddon(ri);
                 widgets::ToastShow(rr.message, rr.ok ? widgets::ToastType::Success : widgets::ToastType::Error, 7.0f);
                 if (rr.ok) s_selectedId.clear();
                 ImGui::CloseCurrentPopup();
             }
             ImGui::SameLine();
-            if (eam::ui::Button("Cancel", eam::ui::icons::kClose)) ImGui::CloseCurrentPopup();
+            if (eam::ui::Button("取消", eam::ui::icons::kClose)) ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
     }
@@ -472,7 +472,7 @@ void RenderTabAddons(AddonManager* manager) {
     ImGui::PopStyleColor();
     ImGui::Dummy(ImVec2(0, S(4)));
     if (addons.empty()) {
-        widgets::EmptyState(listWidth, "No addons installed yet", "Use Install addon above, or drop a folder, .zip or .dll onto this window.");
+        widgets::EmptyState(listWidth, "尚未安装任何插件", "使用上方的“安装插件”，或将文件夹、.zip 或 .dll 拖放到本窗口。");
     }
     for (int i = 0; i < (int)addons.size(); i++) {
         if (!MatchesFilter(addons[i], s_searchBuffer)) continue;
@@ -496,7 +496,7 @@ void RenderTabAddons(AddonManager* manager) {
     if (sel >= 0)
         RenderDetail(manager, addons[sel], sel);
     else
-        ImGui::TextDisabled("Select an addon.");
+        ImGui::TextDisabled("请选择一个插件。");
     ImGui::EndChild();
 }
 
