@@ -18,37 +18,37 @@ enum Which { kReShade = 0, kWindowed = 1, kRecorder = 2, kGpuLimit = 3, kLsConfi
 
 const Info kInfo[kCount] = {
     { reshade::kId,
-      "ReShade input passthrough",
-      "Use the mouse and keyboard on a ReShade overlay while Lossless Scaling is scaling the game.",
-      "Lossless Scaling's window normally swallows the mouse and keyboard, so a ReShade menu cannot be clicked or typed into. With this on, "
-      "the hotkey below turns passthrough on and off: while it is on, your input goes to the ReShade overlay. It turns itself off when the "
-      "game or Lossless Scaling loses focus.\nIt can be switched on and off at any time." },
+      "ReShade 输入直通",
+      "在 Lossless Scaling 缩放游戏时，仍能使用 ReShade 覆盖层上的鼠标和键盘。",
+      "Lossless Scaling 的窗口平时会截获鼠标和键盘，ReShade 菜单因此点不了、也输不了字。开启本功能后，用下方的快捷键即可切换直通："
+      "直通开启时，你的输入会送往 ReShade 覆盖层；游戏或 Lossless Scaling 失去焦点时，直通会自动关闭。\n可随时开启或关闭。" },
     { windowed::kId,
-      "Windowed mode and second monitor",
-      "Let Lossless Scaling work with a windowed game, or with a second monitor.",
-      "Adds a virtual display the size of your game window, so Lossless Scaling can scale a window instead of needing full screen. It can also "
-      "cover just one half of that window (split screen) or sit beside it (for a second monitor).\nIt has to be in place before Lossless "
-      "Scaling starts, so switching it on needs Lossless Scaling to be restarted. Switching it off takes effect at once." },
+      "窗口化模式与第二显示器",
+      "让 Lossless Scaling 也能处理窗口化的游戏，或配合第二显示器使用。",
+      "添加一块与游戏窗口同尺寸的虚拟显示器，让 Lossless Scaling 得以缩放窗口，而不必占用全屏。也可以只覆盖该窗口的一半（分屏），"
+      "或位于其旁边（用作第二显示器）。\n本功能必须在 Lossless Scaling 启动前就位，因此开启后需要重启 Lossless Scaling 才生效；关闭则立即生效。" },
     { recorder::kId,
-      "Recording",
-      "Keep the last seconds of what Lossless Scaling captures and save them with a hotkey.",
-      "The last few seconds of the game's frames (as Lossless Scaling captures them), kept in memory, losslessly compressed, and saved as a .lsrec file with "
-      "Ctrl+Shift+F1: for bug reports that can be replayed offline, tests and comparing looks. It finds the frames by itself, with frame generation on and "
-      "no addon switched on (with frame generation off it takes the frame Lossless Scaling's scaling pass reads); the addons add the frames only they have. It can be switched on and off at any time." },
+      "录制",
+      "保留 Lossless Scaling 捕获画面的最后几秒，按快捷键即可保存。",
+      "把游戏最近几秒的帧（即 Lossless Scaling 捕获到的画面）无损压缩后存放在内存里，按 Ctrl+Shift+F1 即可存为 .lsrec 文件："
+      "适合可离线回放的缺陷报告、测试和前后对比。它会自行寻找帧：帧生成开启且未启用任何插件时，记录的是帧生成的输出"
+      "（帧生成关闭时，取 Lossless Scaling 缩放处理趟所读取的那一帧）；插件则只补充仅它们才有的那部分帧。可随时开启或关闭。" },
     { gpulimit::kId,
-      "GPU limit",
-      "Keep the graphics card under a load, 80 to 100 %, for the addons that can make their work cheaper.",
-      "The manager reads the load of the card Lossless Scaling runs on. While it stays at or over the limit for a few seconds, the addons lower their cost: Neural Rendering's Auto quality "
-      "takes the model's working size down, and the upscalers' \"lighter upscaling when the card is full\" starts; they go back when the load is well under the limit. One setting for all the "
-      "addons. It can be switched on and off at any time." },
+      "GPU 限制",
+      "把显卡负载控制在 80–100% 的上限内，供能降低自身开销的插件使用。",
+      "插件管理器会读取运行 Lossless Scaling 的那块显卡的负载。负载连续几秒达到或超过上限时，插件就会降低自身开销："
+      "神经渲染的自动画质会缩小模型的工作尺寸，各上采样器也会启用\"显卡吃满时用更轻的上采样\"；负载明显低于上限后，一切恢复原状。"
+      "所有插件共用这一项设置。可随时开启或关闭。" },
     { lsconfig::kId,
-      "Lossless Scaling's hidden settings",
-      "Change the look and place of its frame rate counter, and a few expert values, that its window does not show.",
-      "Edits Lossless Scaling's own config.ini (beside this program): the counter's size, colour, font and position, and some expert values. Lossless Scaling reads the file when scaling starts, so a change applies from the next time. Only the lines you change are touched; the first change keeps a copy as config.ini.bak-manager." },
+      "Lossless Scaling 的隐藏设置",
+      "调整其帧率计数器的外观与位置，以及它的窗口没有露出的几项专家数值。",
+      "直接编辑 Lossless Scaling 自己的 config.ini（位于本程序旁边）：包括计数器的大小、颜色、字体和位置，以及若干专家数值。Lossless Scaling 在缩放开始时读取该文件，因此改动从下一次缩放起生效。只改动你修改过的行；首次修改时会先把原文件备份为 config.ini.bak-manager。" },
     { superlog::kId,
-      "Super log",
-      "Everything needed to look into a problem, one press away: a detailed log and a report with one hotkey.",
-      "While on, the log is at Debug, and Ctrl+Shift+F12 (or the button) saves a report: one zip in the reports folder beside Lossless Scaling with the logs, the settings, the system (graphics cards, drivers, displays, versions), what Lossless Scaling's window sent and when, the last ten minutes of every series the addons publish and each addon's frame trace. It can also save one by itself when an addon reports an error. Nothing is uploaded: you send the file. It can be switched on and off at any time." },
+      "超级日志",
+      "排查问题所需的一切，一键可得：一份详细日志，外加按快捷键即生成的报告。",
+      "开启后日志等级为 Debug，按 Ctrl+Shift+F12（或对应按钮）即可保存报告：在 Lossless Scaling 旁的 reports 文件夹里生成一个 zip，"
+      "内含日志、设置、系统信息（显卡、驱动、显示器、版本）、Lossless Scaling 窗口发送的内容与时间、各插件发布的每条序列最近十分钟的数据，以及每个插件的帧跟踪记录。"
+      "插件报告错误时，它也会自动保存一份。任何内容都不会上传：文件由你自己发送。可随时开启或关闭。" },
 };
 
 ConfigManager& Cfg() { return ConfigManager::Instance(); }

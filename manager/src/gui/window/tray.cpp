@@ -19,8 +19,8 @@ void Open(const std::wstring& target) { ShellExecuteW(nullptr, L"open", target.c
 }
 
 std::wstring TipText(const std::wstring& hotkeyLabel) {
-    std::wstring tip = EAM_PRODUCT_SHORT_W L": click to open or close";
-    if (!hotkeyLabel.empty()) tip += L" (" + hotkeyLabel + L")";
+    std::wstring tip = EAM_PRODUCT_SHORT_W L"：点击打开或关闭";
+    if (!hotkeyLabel.empty()) tip += L"（" + hotkeyLabel + L"）";
     return tip;
 }
 
@@ -79,11 +79,11 @@ void ShowMenu(HWND hwnd, bool managerHidden, bool& toggle) {
     toggle = false;
     HMENU menu = CreatePopupMenu();
     if (!menu) return;
-    AppendMenuW(menu, MF_STRING, kToggle, managerHidden ? L"Open the addon manager" : L"Hide the addon manager");
+    AppendMenuW(menu, MF_STRING, kToggle, managerHidden ? L"打开插件管理器" : L"隐藏插件管理器");
     AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
-    AppendMenuW(menu, MF_STRING, kOpenAddons, L"Open the addons folder");
-    AppendMenuW(menu, MF_STRING, kOpenLog, L"Open the log file");
-    AppendMenuW(menu, MF_STRING, kOpenLogs, L"Open the logs folder");
+    AppendMenuW(menu, MF_STRING, kOpenAddons, L"打开插件文件夹");
+    AppendMenuW(menu, MF_STRING, kOpenLog, L"打开日志文件");
+    AppendMenuW(menu, MF_STRING, kOpenLogs, L"打开日志文件夹");
 
     POINT pt;
     GetCursorPos(&pt);
