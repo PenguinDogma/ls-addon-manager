@@ -173,36 +173,36 @@ void RenderOptions() {
     rec::Settings s = g_service->Current();
     bool changed = false;
 
-    if (ImGui::Checkbox("Keep the last few seconds ready to save", &s.on)) changed = true;
+    if (ImGui::Checkbox("保留最近几秒以备保存", &s.on)) changed = true;
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("On: the recorder keeps the last seconds in memory all the time, and the hotkey saves them at once.\n"
-                          "Off: nothing is kept; the hotkey records the next ten seconds, saves them and stops (it holds the memory only for that).");
+        ImGui::SetTooltip("开启：录制器始终在内存里保留最近几秒，按快捷键立即保存。\n"
+                          "关闭：什么都不保留；快捷键会录制接下来的十秒，存完即停（内存也只为这十秒占用）。");
     ImGui::SetNextItemWidth(ImGui::GetFontSize() * 16.0f);
-    float seconds = s.seconds; if (ImGui::SliderFloat("Seconds kept", &seconds, 1.0f, 60.0f, "%.0f s")) { s.seconds = seconds; changed = true; }
+    float seconds = s.seconds; if (ImGui::SliderFloat("保留秒数", &seconds, 1.0f, 60.0f, "%.0f 秒")) { s.seconds = seconds; changed = true; }
     {
-        int mode = s.compact ? 0 : 1; const char* modes[] = { "Compact (8-bit picture, small)", "Exact (as captured, huge for HDR)" };
+        int mode = s.compact ? 0 : 1; const char* modes[] = { "紧凑（8 位画面，体积小）", "原样（按捕获存储，HDR 下非常大）" };
         ImGui::SetNextItemWidth(ImGui::GetFontSize() * 16.0f);
-        if (ImGui::Combo("Frames", &mode, modes, 2)) { s.compact = mode == 0; changed = true; }
+        if (ImGui::Combo("帧", &mode, modes, 2)) { s.compact = mode == 0; changed = true; }
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Compact: HDR frames are made into an 8-bit SDR picture (what you see; highlights above the SDR white clip) on the card first: about a sixth of the size, a 10 s clip about 1 GB, saved in seconds.\n"
-                              "Exact: every frame as Lossless Scaling captured it, half-float HDR included: about 0.85 GB a second at 2560x1440, a minute to write. For a bug that depends on the HDR values.\n"
-                              "8-bit frames are kept as they are in both. Changing it starts the recording again.");
+            ImGui::SetTooltip("紧凑：HDR 帧先在显卡上转成 8 位 SDR 画面（即你看到的画面；高于 SDR 白位的高光会被削平）：体积约为六分之一，10 秒片段约 1 GB，几秒即可存完。\n"
+                              "原样：每一帧都按 Lossless Scaling 捕获到的样子保存，包括半精度浮点 HDR：2560x1440 下每秒约 0.85 GB，写入需一分钟。用于依赖 HDR 数值的缺陷。\n"
+                              "两种模式下 8 位帧都原样保留。更改此选项会让录制重新开始。");
     }
     ImGui::SetNextItemWidth(ImGui::GetFontSize() * 16.0f);
-    int budget = s.budgetMb; if (ImGui::SliderInt("Memory for it", &budget, 512, 32768, "%d MB")) { s.budgetMb = budget; changed = true; }
+    int budget = s.budgetMb; if (ImGui::SliderInt("为其保留的内存", &budget, 512, 32768, "%d MB")) { s.budgetMb = budget; changed = true; }
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("The older frames go first when this is full. A second of 4K HDR can take 200 MB or more, even compressed: raise it for long clips at 4K.");
+        ImGui::SetTooltip("存满后最早的帧先被丢弃。即便经过压缩，4K HDR 的一秒也可能占到 200 MB 以上：在 4K 下录长片段请调高此值。");
     ImGui::SetNextItemWidth(ImGui::GetFontSize() * 16.0f);
-    float after = s.afterSeconds; if (ImGui::SliderFloat("Keep going after the key", &after, 0.0f, 30.0f, after < 0.5f ? "save at once" : "%.0f s")) { s.afterSeconds = after; changed = true; }
+    float after = s.afterSeconds; if (ImGui::SliderFloat("按键后继续录制", &after, 0.0f, 30.0f, after < 0.5f ? "立即保存" : "%.0f 秒")) { s.afterSeconds = after; changed = true; }
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("After the hotkey, keep recording this many seconds and then save: the file holds the seconds before the key and these after it.");
-    if (ImGui::Checkbox("Record what is shown", &s.shown)) changed = true;
+        ImGui::SetTooltip("按下快捷键后，再继续录制这么多秒然后保存：文件既包含按键之前的几秒，也包含之后的这几秒。");
+    if (ImGui::Checkbox("录制显示的画面", &s.shown)) changed = true;
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Record the picture as Lossless Scaling shows it (the addons offer their presented frames) instead of the frames it captured from the game.\n"
-                          "Needs an addon that offers them (Neural Rendering, the upscalers, EchoFG) to be switched on. For looking at flicker and trailing in what you see.");
+        ImGui::SetTooltip("录制 Lossless Scaling 显示出来的画面（插件会提供它们呈现的帧），而不是它从游戏捕获的帧。\n"
+                          "需要开启一个能提供这些帧的插件（神经渲染、各上采样器、EchoFG）。用于查看你所见画面中的闪烁与拖影。");
 
     ImGui::AlignTextToFramePadding();
-    ImGui::TextDisabled("Hotkey");
+    ImGui::TextDisabled("快捷键");
     ImGui::SameLine();
     if (ImGui::Checkbox("##hotkey_on", &s.hotkeyOn)) changed = true;
     ImGui::SameLine();
@@ -217,37 +217,37 @@ void RenderOptions() {
         }
         ImGui::EndCombo();
     }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Press it while the game has the focus. OBS' replay-buffer key can be the same one: one press then saves both.");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("在游戏拥有焦点时按下。OBS 的回放缓冲快捷键也可以设成同一个：一次按下即可两者都保存。");
 
-    if (ImGui::Checkbox("Sounds (a tick at the key, a rising pair when saved, a low tone if there was nothing)", &s.beep)) changed = true;
+    if (ImGui::Checkbox("声音（按下按键时一声短响，保存时上行双响，无内容可存时低音）", &s.beep)) changed = true;
     ImGui::SameLine();
-    if (ImGui::SmallButton("Test the sound")) g_service->TestSound();
+    if (ImGui::SmallButton("测试声音")) g_service->TestSound();
     ImGui::SameLine();
-    if (ImGui::Checkbox("Write a note beside it", &s.note)) changed = true;
+    if (ImGui::Checkbox("同时写入说明文件", &s.note)) changed = true;
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("<file>.lsrec.json: the game, the picture, which addons were on and their main settings, so a clip says how it was made.");
+        ImGui::SetTooltip("<文件>.lsrec.json：记录游戏、画面、当时开启了哪些插件及其主要设置，让每个片段都能说明自己是如何录制的。");
 
     static char folder[512] = {};
     static bool folderRead = false;
     if (!folderRead) { snprintf(folder, sizeof folder, "%s", Utf8(s.folder).c_str()); folderRead = true; }
     ImGui::SetNextItemWidth(ImGui::GetFontSize() * 30.0f);
-    ImGui::InputTextWithHint("##recorder_folder", "Folder (empty: Videos\\Lossless Scaling)", folder, sizeof folder);
+    ImGui::InputTextWithHint("##recorder_folder", "文件夹（留空：Videos\\Lossless Scaling）", folder, sizeof folder);
     if (ImGui::IsItemDeactivatedAfterEdit()) { s.folder = Wide(folder); changed = true; }
     ImGui::SameLine();
-    if (ImGui::Button("Open")) {
+    if (ImGui::Button("打开")) {
         std::wstring dir = s.folder;
         if (dir.empty()) { PWSTR v = nullptr; if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Videos, 0, nullptr, &v)) && v) { dir = std::wstring(v) + L"\\Lossless Scaling"; CoTaskMemFree(v); } }
         CreateDirectoryW(dir.c_str(), nullptr);
         ShellExecuteW(nullptr, L"open", dir.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
     }
 
-    if (ImGui::Button(g_service->Clipping() ? "Recording a clip..." : g_service->Pending() ? "Saving soon..." : s.on ? "Save the last seconds" : "Record a clip")) g_service->Request();
+    if (ImGui::Button(g_service->Clipping() ? "正在录制片段…" : g_service->Pending() ? "即将保存…" : s.on ? "保存最近几秒" : "录制片段")) g_service->Request();
     ImGui::SameLine();
     const std::string summary = g_service->Summary();
-    ImGui::TextDisabled("%s", summary.empty() ? "idle" : summary.c_str());
+    ImGui::TextDisabled("%s", summary.empty() ? "空闲" : summary.c_str());
     bool ok = true; const std::string last = g_service->LastResult(ok);
     if (!last.empty()) ImGui::TextColored(ok ? ImVec4(0.7f, 0.9f, 0.5f, 1.0f) : ImVec4(0.95f, 0.65f, 0.2f, 1.0f), "%s", last.c_str());
-    ImGui::TextDisabled("It finds Lossless Scaling's captured frames by itself, with frame generation on or off (off: the frame its scaling pass reads); no addon has to be switched on.");
+    ImGui::TextDisabled("它会自行寻找 Lossless Scaling 捕获的帧，帧生成开启或关闭均可（关闭时：取其缩放处理趟读取的那一帧）；无需开启任何插件。");
 
     if (changed) { Store(s); g_service->Configure(s); }
 }

@@ -46,26 +46,26 @@ std::string Status() {
     if (!g_on) return {};
     const uint32_t limit = Percent(), load = Load();
     char text[120];
-    if (!load) snprintf(text, sizeof text, "Limit %u %%", limit);
-    else snprintf(text, sizeof text, "Limit %u %%: the card is at %u %%%s", limit, load, load >= limit ? " (over: addons are cutting their cost)" : "");
+    if (!load) snprintf(text, sizeof text, "限制 %u %%", limit);
+    else snprintf(text, sizeof text, "限制 %u %%：显卡当前 %u %%%s", limit, load, load >= limit ? "（超限：插件正在降低自身开销）" : "");
     return text;
 }
 
 void RenderOptions() {
     int percent = static_cast<int>(Percent());
     ImGui::SetNextItemWidth(ImGui::GetFontSize() * 16.0f);
-    if (ImGui::SliderInt("Keep the card under", &percent, 80, 100, "%d %%")) {
+    if (ImGui::SliderInt("显卡负载保持在以下", &percent, 80, 100, "%d %%")) {
         Cfg().Set(kId, "percent", std::to_string(percent));
         Cfg().Save();
         if (g_backends.setLimit && g_on) g_backends.setLimit(static_cast<uint32_t>(percent));
     }
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("When the graphics card's load stays at or above this for a few seconds, the addons make their own work cheaper (Neural Rendering takes the model's working size down; the upscalers' \"lighter upscaling when the card is full\" starts), and "
-                          "go back when the load is well under it. 100 % means only when the card is completely full. It works together with the addons' own settings: Neural Rendering's Auto quality has to be on for it.");
+        ImGui::SetTooltip("显卡负载连续几秒达到或超过此值时，各插件会降低自身的开销（神经渲染会缩小模型的工作尺寸；各上采样器的\"显卡吃满时用更轻的上采样\"会启动），"
+                          "负载明显低于此值后再恢复原状。100 % 表示仅在显卡完全吃满时才生效。它与插件自身的设置配合工作：需要开启神经渲染的自动画质。");
     const uint32_t load = Load();
-    if (load) ImGui::TextDisabled("The card is at %u %% now%s.", load, load >= static_cast<uint32_t>(percent) ? ": over the limit" : "");
-    else ImGui::TextDisabled("The card's load is read while a game is scaled (or reads as idle).");
-    ImGui::TextDisabled("It reads the card Lossless Scaling runs on; no addon has to be switched on, but it only has an effect on the addons that are.");
+    if (load) ImGui::TextDisabled("显卡当前负载 %u %%。%s", load, load >= static_cast<uint32_t>(percent) ? "已超过限制" : "");
+    else ImGui::TextDisabled("显卡负载在游戏被缩放时读取（否则读数为空闲）。");
+    ImGui::TextDisabled("它读取的是 Lossless Scaling 所运行的那块显卡；无需开启任何插件，但只对已开启的插件生效。");
 }
 
 } // namespace gpulimit

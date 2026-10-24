@@ -183,7 +183,7 @@ void Watch() {
 
 const char* KeyName(int vk) {
     static char text[32];
-    if (vk == 0) return "None";
+    if (vk == 0) return "无";
     if (vk >= VK_F1 && vk <= VK_F12) { sprintf_s(text, "F%d", vk - VK_F1 + 1); return text; }
     switch (vk) {
         case VK_INSERT: return "Insert";
@@ -194,7 +194,7 @@ const char* KeyName(int vk) {
         case VK_NEXT: return "Page Down";
     }
     if (vk >= 'A' && vk <= 'Z') { text[0] = (char)vk; text[1] = 0; return text; }
-    sprintf_s(text, "Key %d", vk);
+    sprintf_s(text, "按键 %d", vk);
     return text;
 }
 
@@ -221,7 +221,7 @@ void Stop() {
     LOG_INFO("ReShade", "ReShade input passthrough is off");
 }
 
-std::string Status() { return g_passthroughOn ? "Passthrough ON" : std::string(); }
+std::string Status() { return g_passthroughOn ? "直通已开启" : std::string(); }
 
 void ForcePassthroughForTest(bool on) {
     g_ignoreFocusForTest = on;
@@ -232,15 +232,15 @@ void RenderOptions() {
     bool changed = false;
 
     bool autoClick = g_autoClick;
-    if (ImGui::Checkbox("Auto click and repress", &autoClick)) { g_autoClick = autoClick; changed = true; }
+    if (ImGui::Checkbox("自动点击并重按快捷键", &autoClick)) { g_autoClick = autoClick; changed = true; }
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("When you turn passthrough on or off, this clicks the mouse once (wherever the pointer is) and, when turning it on,\n"
-                          "presses the hotkey again. ReShade needs that click to take focus, and the second press to open its menu.\n"
-                          "Turn it off if you would rather do that yourself: the click lands on whatever is under the pointer.");
+        ImGui::SetTooltip("开关直通时，本选项会替你点击一次鼠标（在指针所在处），开启时还会把快捷键再按一次。\n"
+                          "ReShade 需要这次点击才能取得焦点，需要第二次按键才能打开它的菜单。\n"
+                          "若你想自己完成这些操作，可以关掉它：那一下点击会落在指针下方的任何东西上。");
 
     bool ctrl = g_hotkeyCtrl, alt = g_hotkeyAlt, shift = g_hotkeyShift;
     ImGui::AlignTextToFramePadding();
-    ImGui::TextDisabled("Hotkey");
+    ImGui::TextDisabled("快捷键");
     ImGui::SameLine();
     if (ImGui::Checkbox("Ctrl", &ctrl)) { g_hotkeyCtrl = ctrl; changed = true; }
     ImGui::SameLine();
@@ -260,7 +260,7 @@ void RenderOptions() {
             if (ImGui::Selectable(KeyName(vk), current == vk)) { g_hotkeyVk = vk; changed = true; }
         ImGui::EndCombo();
     }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("The key that turns passthrough on and off, with the modifiers ticked. Press it while the game has the focus.");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("与上方勾选的修饰键配合、用来开关直通的按键。在游戏拥有焦点时按下它。");
 
     if (changed) SaveSettings();
 }

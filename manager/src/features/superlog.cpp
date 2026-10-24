@@ -52,7 +52,7 @@ void SaveReport(const std::string& reason) {
         std::sort(zips.begin(), zips.end());
         for (size_t i = 0; i + 10 < zips.size(); ++i) fs::remove(zips[i], ec);
     }
-    { std::lock_guard<std::mutex> lock(g_textMutex); g_lastText = d.ok ? "Report saved: " + d.zip.filename().string() : "The report could not be saved: " + d.message; g_lastTextAt = GetTickCount64(); if (d.ok) g_lastZip = d.zip; }
+    { std::lock_guard<std::mutex> lock(g_textMutex); g_lastText = d.ok ? "报告已保存：" + d.zip.filename().string() : "报告无法保存：" + d.message; g_lastTextAt = GetTickCount64(); if (d.ok) g_lastZip = d.zip; }
     if (d.ok) LOG_INFO("SuperLog", "report saved (%s): %ls", reason.c_str(), d.zip.c_str()); else LOG_WARN("SuperLog", "the report could not be saved: %s", d.message.c_str());
     g_busy = false;
 }
@@ -89,7 +89,7 @@ std::string Status() {
     if (!g_on) return {};
     std::lock_guard<std::mutex> lock(g_textMutex);
     if (!g_lastText.empty() && GetTickCount64() - g_lastTextAt < 60000) return g_lastText;
-    return "Ready: Ctrl+Shift+F12 saves a report";
+    return "就绪：Ctrl+Shift+F12 可保存一份报告";
 }
 
 void NotifyProblem(const std::string& addon, const std::string& text) {
@@ -104,16 +104,16 @@ void NotifyProblem(const std::string& addon, const std::string& text) {
 
 void RenderOptions() {
     bool detail = Flag("detail", true), autoSave = Flag("auto", true), hotkey = Flag("hotkey", true);
-    if (ImGui::Checkbox("Detailed log while this is on (Debug)", &detail)) { Cfg().Set(kId, "detail", detail ? "1" : "0"); Cfg().Save(); Logger::Instance().SetMinLevel(detail ? LogLevel::Debug : ConfiguredLevel()); }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("The log records what each shader Lossless Scaling asks for, each pass and more. Switching this feature off puts Settings > Log detail back.");
-    if (ImGui::Checkbox("Save a report by itself when an addon reports an error", &autoSave)) { Cfg().Set(kId, "auto", autoSave ? "1" : "0"); Cfg().Save(); }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("When an addon's status line turns red (\"DLSS could not run\"), a report is saved a few seconds later, so the log has what follows. At most one every five minutes.");
-    if (ImGui::Checkbox("Ctrl+Shift+F12 saves a report", &hotkey)) { Cfg().Set(kId, "hotkey", hotkey ? "1" : "0"); Cfg().Save(); }
-    if (ImGui::Button("Save a report now")) std::thread([] { SaveReport("the button"); }).detach();
+    if (ImGui::Checkbox("本功能开启期间记录详细日志（Debug）", &detail)) { Cfg().Set(kId, "detail", detail ? "1" : "0"); Cfg().Save(); Logger::Instance().SetMinLevel(detail ? LogLevel::Debug : ConfiguredLevel()); }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("日志会记录 Lossless Scaling 请求的每个着色器、每个处理趟等更多内容。关闭本功能后，“设置 > 日志详细度”会恢复原状。");
+    if (ImGui::Checkbox("插件报告错误时自动保存报告", &autoSave)) { Cfg().Set(kId, "auto", autoSave ? "1" : "0"); Cfg().Save(); }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("当插件的状态行变红（\"DLSS 无法运行\"）时，几秒后会保存一份报告，让日志留下随后的内容。每五分钟最多一次。");
+    if (ImGui::Checkbox("Ctrl+Shift+F12 保存报告", &hotkey)) { Cfg().Set(kId, "hotkey", hotkey ? "1" : "0"); Cfg().Save(); }
+    if (ImGui::Button("立即保存报告")) std::thread([] { SaveReport("the button"); }).detach();
     ImGui::SameLine();
-    if (ImGui::Button("Open the reports folder")) { std::error_code ec; fs::create_directories(LsDir() / L"reports", ec); ShellExecuteW(nullptr, L"open", (LsDir() / L"reports").c_str(), nullptr, nullptr, SW_SHOWNORMAL); }
+    if (ImGui::Button("打开 reports 文件夹")) { std::error_code ec; fs::create_directories(LsDir() / L"reports", ec); ShellExecuteW(nullptr, L"open", (LsDir() / L"reports").c_str(), nullptr, nullptr, SW_SHOWNORMAL); }
     { std::lock_guard<std::mutex> lock(g_textMutex); if (!g_lastText.empty()) ImGui::TextDisabled("%s", g_lastText.c_str()); }
-    ImGui::TextDisabled("The report holds the logs, the settings, the system (cards, drivers, displays, versions), what Lossless Scaling's window sent and when, the last ten minutes of every series and each addon's frame trace. Nothing is uploaded: you send the file.");
+    ImGui::TextDisabled("报告内含日志、设置、系统信息（显卡、驱动、显示器、版本）、Lossless Scaling 窗口发送的内容与时间、各插件发布的每条序列最近十分钟的数据，以及每个插件的帧跟踪记录。任何内容都不会上传：文件由你自己发送。");
 }
 
 } // namespace superlog

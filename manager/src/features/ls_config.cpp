@@ -143,45 +143,45 @@ std::string IniSet(const std::string& text, const std::string& section, const st
 }
 
 void RenderOptions() {
-    ImGui::TextDisabled("Settings in Lossless Scaling's own config.ini that its window does not show. They apply from the next time scaling starts.");
+    ImGui::TextDisabled("Lossless Scaling 自己的 config.ini 中、其窗口没有显示的设置。改动从下一次缩放开始时生效。");
     ImGui::Spacing();
-    ImGui::TextUnformatted("Lossless Scaling's frame rate counter");
-    EditFloat("Size", "fps_counter", "scale", "1.0", 0.5f, 4.0f, "How big the counter's text is (1.00 is Lossless Scaling's own size).");
+    ImGui::TextUnformatted("Lossless Scaling 的帧率计数器");
+    EditFloat("大小", "fps_counter", "scale", "1.0", 0.5f, 4.0f, "计数器文字的大小（1.00 为 Lossless Scaling 的默认大小）。");
     {   // colour: 0xRRGGBB in the file
         const std::string c = Get("fps_counter", "color", "0xD3D3D3");
         const unsigned rgb = static_cast<unsigned>(strtoul(c.c_str(), nullptr, 0));
         float col[3] = { ((rgb >> 16) & 255) / 255.0f, ((rgb >> 8) & 255) / 255.0f, (rgb & 255) / 255.0f };
         ImGui::SetNextItemWidth(ImGui::GetFontSize() * 14.0f);
-        if (ImGui::ColorEdit3("Colour", col, ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel)) {
+        if (ImGui::ColorEdit3("颜色", col, ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel)) {
             char t[16]; snprintf(t, sizeof t, "0x%02X%02X%02X", int(col[0] * 255 + 0.5f), int(col[1] * 255 + 0.5f), int(col[2] * 255 + 0.5f));
             WriteSetting("fps_counter", "color", t); Dirty();
         }
-        ImGui::SameLine(); ImGui::TextUnformatted("Colour");
+        ImGui::SameLine(); ImGui::TextUnformatted("颜色");
     }
     {   // font name
         static char font[64]; static bool loaded = false;
         if (!loaded) { snprintf(font, sizeof font, "%s", Get("fps_counter", "font", "Consolas").c_str()); loaded = true; }
         ImGui::SetNextItemWidth(ImGui::GetFontSize() * 14.0f);
-        if (ImGui::InputText("Font", font, sizeof font, ImGuiInputTextFlags_EnterReturnsTrue)) { WriteSetting("fps_counter", "font", font); Dirty(); }
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("The name of an installed font (Enter to save). Lossless Scaling's own is Consolas.");
+        if (ImGui::InputText("字体", font, sizeof font, ImGuiInputTextFlags_EnterReturnsTrue)) { WriteSetting("fps_counter", "font", font); Dirty(); }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("已安装字体的名称（按回车保存）。Lossless Scaling 默认为 Consolas。");
     }
-    EditInt("Move right", "fps_counter", "offset_x", "0", -400, 400, "Pixels from the counter's usual place in the top left (negative: left).");
-    EditInt("Move down", "fps_counter", "offset_y", "0", -400, 400, "Pixels from the counter's usual place in the top left (negative: up).");
-    EditBool("Show both numbers", "fps_counter", "show_captured", "1", "On: \"captured / shown\" (60 / 120). Off: only the rate that is shown.");
+    EditInt("向右移动", "fps_counter", "offset_x", "0", -400, 400, "相对计数器默认位置（左上角）的像素偏移（负值：向左）。");
+    EditInt("向下移动", "fps_counter", "offset_y", "0", -400, 400, "相对计数器默认位置（左上角）的像素偏移（负值：向上）。");
+    EditBool("显示两个数字", "fps_counter", "show_captured", "1", "开启：显示\"捕获 / 显示\"（60 / 120）。关闭：仅显示输出的帧率。");
     ImGui::Spacing();
-    if (ImGui::TreeNode("Expert values (Lossless Scaling's own names; change one at a time)")) {
-        ImGui::TextDisabled("Capture");
+    if (ImGui::TreeNode("专家数值（Lossless Scaling 原名；一次只改一个）")) {
+        ImGui::TextDisabled("捕获");
         EditInt("frametime_buffer_size", "capture", "frametime_buffer_size", "15", 1, 120, nullptr);
         EditInt("frametime_buffer_reset_multiplier", "capture", "frametime_buffer_reset_multiplier", "6", 1, 60, nullptr);
         EditFloat("queue_draining_momentum", "capture", "queue_draining_momentum", "0.01", 0.0f, 1.0f, nullptr);
-        ImGui::TextDisabled("Frame generation");
+        ImGui::TextDisabled("帧生成");
         EditInt("ui_detection_rate", "lsfg", "ui_detection_rate", "1", 0, 8, nullptr);
         EditFloat("ui_detection_threshold", "lsfg", "ui_detection_threshold", "0.5", 0.0f, 1.0f, nullptr);
         EditFloat("real_timestamp_tolerance", "lsfg", "real_timestamp_tolerance", "0.05", 0.0f, 1.0f, nullptr);
         EditInt("base_framerate_threshold", "lsfg", "base_framerate_threshold", "10", 0, 120, nullptr);
-        ImGui::TextDisabled("Rendering");
+        ImGui::TextDisabled("渲染");
         EditBool("flush", "rendering", "flush", "1", nullptr);
-        ImGui::TextDisabled("The values shown when a key is missing from the file are Lossless Scaling's usual ones. config.ini.bak-manager is the file as it was before the manager first changed it.");
+        ImGui::TextDisabled("文件中缺少某个键时显示的数值是 Lossless Scaling 的默认值。config.ini.bak-manager 是管理器首次修改之前的原文件。");
         ImGui::TreePop();
     }
 }

@@ -285,7 +285,7 @@ DWORD WINAPI WatcherThread(LPVOID) {
     return 0;
 }
 
-const char* const kSides[] = { "Left", "Right", "Top", "Bottom" };
+const char* const kSides[] = { "左", "右", "上", "下" };
 
 } // namespace
 
@@ -351,9 +351,9 @@ void SetActive(bool on) {
 std::string Status() {
     if (!g_started || !GetState().settings.active) return {};
     const Settings& s = GetState().settings;
-    if (s.splitMode) return std::string("Split: ") + kSides[s.splitType & 3];
-    if (s.positionMode) return std::string("Beside the game: ") + kSides[s.positionSide & 3];
-    return "Virtual display on";
+    if (s.splitMode) return std::string("分屏：") + kSides[s.splitType & 3];
+    if (s.positionMode) return std::string("位于游戏旁：") + kSides[s.positionSide & 3];
+    return "虚拟显示器已开启";
 }
 
 void RenderOptions() {
@@ -361,29 +361,29 @@ void RenderOptions() {
     bool changed = false;
 
     if (s.positionMode) ImGui::BeginDisabled();
-    if (ImGui::Checkbox("Split screen", &s.splitMode)) changed = true;
+    if (ImGui::Checkbox("分屏", &s.splitMode)) changed = true;
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Lossless Scaling covers only one half of the game window, so the other half stays as it is.\n"
-                          "Not available together with Window positioning.");
+        ImGui::SetTooltip("Lossless Scaling 只覆盖游戏窗口的一半，另一半保持原样。\n"
+                          "不能与“窗口定位”同时使用。");
     if (s.positionMode) ImGui::EndDisabled();
     if (s.splitMode) {
         ImGui::SameLine();
         ImGui::SetNextItemWidth(ImGui::GetFontSize() * 7.0f);
         if (ImGui::Combo("##windowed_split", &s.splitType, kSides, 4)) changed = true;
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Which half of the game window Lossless Scaling covers.");
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Lossless Scaling 覆盖游戏窗口的哪一半。");
     }
 
     if (s.splitMode) ImGui::BeginDisabled();
-    if (ImGui::Checkbox("Window positioning", &s.positionMode)) changed = true;
+    if (ImGui::Checkbox("窗口定位", &s.positionMode)) changed = true;
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Lossless Scaling's window is put beside the game window (for a second monitor or a split desktop)\n"
-                          "instead of on top of it. Not available together with Split screen.");
+        ImGui::SetTooltip("Lossless Scaling 的窗口不再叠在游戏窗口上，而是放在它旁边（用于第二显示器或一分为二的桌面）。\n"
+                          "不能与“分屏”同时使用。");
     if (s.splitMode) ImGui::EndDisabled();
     if (s.positionMode) {
         ImGui::SameLine();
         ImGui::SetNextItemWidth(ImGui::GetFontSize() * 7.0f);
         if (ImGui::Combo("##windowed_side", &s.positionSide, kSides, 4)) changed = true;
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Which side of the game window Lossless Scaling's window sits on.");
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Lossless Scaling 的窗口放在游戏窗口的哪一侧。");
     }
 
     if (changed) SaveSettings();
