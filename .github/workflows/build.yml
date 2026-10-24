@@ -22,3 +22,11 @@ jobs:
       - name: Dev tool self-test
         shell: pwsh
         run: python tools/dev.py selftest
+      - name: Upload the manager and the installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: ls-addon-manager-zh-win-x64
+          path: |
+            manager/build/Release/Lossless.dll
+            installer/build/Release/LSAddonManagerSetup.exe
+          if-no-files-found: error
