@@ -217,6 +217,7 @@ add_executable(eam_uipreview EXCLUDE_FROM_ALL
     src/features/superlog.cpp
     src/diag/history.cpp
     src/diag/report.cpp
+    src/event/event_system.cpp
     src/features/reshade_passthrough.cpp
     src/features/reshade_windows.cpp
     src/features/reshade_input.cpp
