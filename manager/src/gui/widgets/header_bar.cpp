@@ -212,7 +212,7 @@ void HeaderBar() {
     const float maxW = ImGui::GetMainViewport()->WorkSize.x * 0.92f;
     const float w = fs * 36.0f < maxW ? fs * 36.0f : maxW;
     const float maxH = ImGui::GetMainViewport()->WorkSize.y * 0.85f;
-    const float h = fs * 30.0f < maxH ? fs * 30.0f : maxH;
+    const float h = fs * 24.0f < maxH ? fs * 24.0f : maxH;
     ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(w, h), ImGuiCond_Appearing);
     if (ImGui::BeginPopupModal(kScalingHelpPopup, nullptr, ImGuiWindowFlags_NoSavedSettings)) {
