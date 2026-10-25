@@ -215,6 +215,9 @@ void HeaderBar() {
     // the LS scaling cheat-sheet, opened by the ? in the header bar
     if (ImGui::BeginPopupModal(kScalingHelpPopup, nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings)) {
         const float fs = ImGui::GetFontSize();
+        const float scrollCap = ImGui::GetMainViewport()->WorkSize.y * 0.65f;   // cap the sheet so title, margins and the button stay visible
+        ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(100000.0f, scrollCap));
+        ImGui::BeginChild("##sheet_scroll", ImVec2(-1.0f, 0.0f), ImGuiChildFlags_AutoResizeY);
         ImGui::PushTextWrapPos(fs * 30.0f);
         WarnLine("插件联动：DLSS 5 / 上采样插件只接管 NIS 的输出——插件开着时选了其他缩放类型，插件不会生效！这是“插件怎么没反应”的头号原因。");
         ImGui::Dummy(ImVec2(0, S(4)));
@@ -245,6 +248,7 @@ void HeaderBar() {
             }
             ImGui::EndTable();
         }
+        ImGui::EndChild();
 
         ImGui::Dummy(ImVec2(0, S(2)));
         if (ui::Button("知道了", ui::icons::kCheck, ui::ButtonKind::Primary)) ImGui::CloseCurrentPopup();
