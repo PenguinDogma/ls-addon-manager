@@ -60,6 +60,43 @@ Configure "$root\examples\SampleAddon" "$root\examples\SampleAddon\build"
 Build "$root\examples\SampleAddon\build" @('SampleAddon')
 if (-not (Test-Path "$root\examples\SampleAddon\build\Release\SampleAddon.dll")) { $failed += 'sample addon standalone build' }
 
+Section 'the cheat-sheet screenshot (zh): PNG as base64 in the log'
+Build "$root\manager\build" @('eam_uipreview')
+New-Item -ItemType Directory -Force "$root\manager\build\preview" | Out-Null   # the preview does not create its out dir itself
+$env:EAM_PREVIEW_SHEET = '1'
+$env:EAM_PREVIEW_PIXELS = '1280x800'
+& "$root\manager\build\Release\eam_uipreview.exe" "$root\manager\build\preview" 1.0 2>$null | Out-Null
+Remove-Item Env:EAM_PREVIEW_SHEET -ErrorAction SilentlyContinue
+Remove-Item Env:EAM_PREVIEW_PIXELS -ErrorAction SilentlyContinue
+$sheetBmp = "$root\manager\build\preview\preview_sheet.bmp"
+if (-not (Test-Path $sheetBmp)) { $failed += 'cheat-sheet preview bmp'; Write-Host 'preview_sheet.bmp was not written' }
+else {
+    # BMP to PNG without Pillow (the tools\bmp2png.py one takes a whole folder and needs it): the preview writes a 32bpp
+    # top-down BMP (biHeight < 0, see ui_shot.h Save), so the rows are copied by hand into a Bitmap — System.Drawing is
+    # part of Windows — and GDI+ only writes the PNG. Same directory, same name as the task wants.
+    $sheetPng = [IO.Path]::ChangeExtension($sheetBmp, '.png')
+    $bytes = [IO.File]::ReadAllBytes($sheetBmp)
+    $w = [BitConverter]::ToInt32($bytes, 18)
+    $hRaw = [BitConverter]::ToInt32($bytes, 22)
+    $h = [Math]::Abs($hRaw)
+    $off = [BitConverter]::ToInt32($bytes, 10)
+    Add-Type -AssemblyName System.Drawing
+    $bmp = New-Object System.Drawing.Bitmap($w, $h, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+    $rect = New-Object System.Drawing.Rectangle(0, 0, $w, $h)
+    $data = $bmp.LockBits($rect, [System.Drawing.Imaging.ImageLockMode]::WriteOnly, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+    for ($y = 0; $y -lt $h; $y++) {
+        $srcY = if ($hRaw -lt 0) { $y } else { $h - 1 - $y }   # the file's rows run top-down (biHeight < 0) or bottom-up
+        [Runtime.InteropServices.Marshal]::Copy($bytes, $off + $srcY * $w * 4, [IntPtr]($data.Scan0.ToInt64() + $y * $data.Stride), $w * 4)
+    }
+    $bmp.UnlockBits($data)
+    $bmp.Save($sheetPng, [System.Drawing.Imaging.ImageFormat]::Png)
+    $bmp.Dispose()
+    $b64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($sheetPng))
+    Write-Host 'SHEET_B64_BEGIN'
+    for ($i = 0; $i -lt $b64.Length; $i += 6000) { Write-Host $b64.Substring($i, [Math]::Min(6000, $b64.Length - $i)) }
+    Write-Host 'SHEET_B64_END'
+}
+
 Write-Host ""
 if ($failed.Count) { Write-Host "FAILED: $($failed -join '; ')"; exit 1 }
 Write-Host 'ALL CI TESTS PASSED'

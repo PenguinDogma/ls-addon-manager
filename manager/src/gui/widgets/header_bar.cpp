@@ -11,6 +11,7 @@
 #include "eam/widgets.h"
 #include "imgui.h"
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -46,11 +47,11 @@ void Logo(ImDrawList* dl, ImVec2 at, float size) {
 }
 
 // The scaling cheat-sheet behind the header bar's ? button: one row per scheme Lossless Scaling offers,
-// in its own list's order. A **span** in a cell's text is drawn in the accent colour (see CheatCell).
+// in its own list's order (the popup draws the NIS row's advice cell in the accent colour).
 constexpr const char* kScalingHelpPopup = "LS 缩放方案速查###ls_scaling_help";
 struct ScalingRow { const char* scheme; const char* what; const char* suits; };
 const ScalingRow kScalingRows[] = {
-    { "NIS",               "NVIDIA 图像缩放：空间上采样 + 锐化",   "3D 游戏压分辨率后放大；**插件链路的唯一入口**" },
+    { "NIS",               "NVIDIA 图像缩放：空间上采样 + 锐化",   "3D 游戏压分辨率后放大；插件链路的唯一入口" },
     { "FSR 1",             "同类空间上采样（AMD 版）+ 锐化",      "不开插件时给 3D 游戏放大，与 NIS 按口味二选一" },
     { "Nearest（最邻近）",  "一像素对一像素硬放大，零模糊",        "像素画游戏，且缩放比正好整数倍（1080p 到 2160p）" },
     { "Sharp Bilinear",    "先整数倍最邻近，再双线性补零头",      "像素画但缩放比非整数（1080p 到 1440p）" },
@@ -59,21 +60,9 @@ const ScalingRow kScalingRows[] = {
     { "Auto",              "Lossless Scaling 自动判断内容挑算法", "懒人默认；要精确控制就手动选" },
 };
 
-// A cheat-sheet cell whose text may carry a **span**: the span is drawn in the accent colour.
-void CheatCell(const char* text) {
-    const char* star = strstr(text, "**");
-    if (!star) { ImGui::TextUnformatted(text); return; }
-    const char* end = strstr(star + 2, "**");
-    ImGui::TextUnformatted(text, star);
-    ImGui::SameLine(0.0f, 0.0f);
-    ImGui::PushStyleColor(ImGuiCol_Text, V(kAccent));
-    ImGui::TextUnformatted(star + 2, end ? end : star + strlen(star));
-    ImGui::PopStyleColor();
-    if (end) {
-        ImGui::SameLine(0.0f, 0.0f);
-        ImGui::TextUnformatted(end + 2);
-    }
-}
+// A cheat-sheet cell: plain text, wrapped at the caller's wrap position (the NIS row's advice cell
+// is coloured by the caller, see the popup in HeaderBar).
+void CheatCell(const char* text) { ImGui::TextUnformatted(text); }
 
 // A warning line: the kAlert mark, then the text in the theme's amber. Wraps at the caller's wrap position.
 void WarnLine(const char* text) {
@@ -92,6 +81,13 @@ void WarnLine(const char* text) {
 float HeaderBarHeight() { return S(50.0f); }
 
 void HeaderBar() {
+    // EAM_PREVIEW_SHEET=1 (the offline preview, tools/ui_preview.cpp): open the cheat-sheet once,
+    // so a picture can be taken of it — the ? button is not clickable there
+    static bool s_sheetPreviewOpened = false;
+    if (!s_sheetPreviewOpened && getenv("EAM_PREVIEW_SHEET") != nullptr) {
+        s_sheetPreviewOpened = true;
+        ImGui::OpenPopup(kScalingHelpPopup);
+    }
     ImDrawList* dl = ImGui::GetWindowDrawList();
     const ImVec2 origin = ImGui::GetCursorScreenPos();
     const float width = ImGui::GetContentRegionAvail().x, height = HeaderBarHeight();
@@ -212,55 +208,47 @@ void HeaderBar() {
         Tip(tip.c_str());
     }
 
-    // the LS scaling cheat-sheet, opened by the ? in the header bar: pinned to the
-    // centre with a fixed size (auto-sizing popups kept wandering off-screen here)
+    // the LS scaling cheat-sheet, opened by the ? in the header bar: centred, fixed size, stretch
+    // columns (fixed-width cells refused to wrap on real installs); the window itself scrolls if needed
     const float fs = ImGui::GetFontSize();
-    // fixed size: the table's natural width plus margins, capped at 92% / 85% of the window
-    const float naturalW = fs * 36.0f;
     const float maxW = ImGui::GetMainViewport()->WorkSize.x * 0.92f;
-    const float w = naturalW < maxW ? naturalW : maxW;
+    const float w = fs * 36.0f < maxW ? fs * 36.0f : maxW;
     const float maxH = ImGui::GetMainViewport()->WorkSize.y * 0.85f;
-    const float estH = ImGui::GetTextLineHeightWithSpacing() * 26.0f;
-    const float h = estH < maxH ? estH : maxH;
+    const float h = fs * 30.0f < maxH ? fs * 30.0f : maxH;
     ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(w, h), ImGuiCond_Appearing);
     if (ImGui::BeginPopupModal(kScalingHelpPopup, nullptr, ImGuiWindowFlags_NoSavedSettings)) {
-        const float btnRoom = ImGui::GetFrameHeightWithSpacing() + ImGui::GetStyle().ItemSpacing.y;
-        ImGui::BeginChild("##sheet_scroll", ImVec2(-1.0f, -btnRoom));   // fills the window minus the button line; scrolls when needed
-        ImGui::PushTextWrapPos(0.0f);   // wrap at the child's right edge
+        ImGui::PushTextWrapPos(0.0f);
         WarnLine("插件联动：DLSS 5 / 上采样插件只接管 NIS 的输出——插件开着时选了其他缩放类型，插件不会生效！这是“插件怎么没反应”的头号原因。");
         ImGui::Dummy(ImVec2(0, S(4)));
         WarnLine("像素画 / 2D 游戏别配神经渲染（NR）：平涂画面没有细节可恢复，只会换来闪烁和额外功耗。");
         ImGui::PopTextWrapPos();
         ImGui::Dummy(ImVec2(0, S(6)));
 
-        if (ImGui::BeginTable("##scaling_schemes", 3, ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_SizingFixedFit)) {
-            const float inner = ImGui::GetContentRegionAvail().x;   // the width the table actually has
-            const float tableNatural = fs * (9.2f + 11.6f + 12.8f);
-            const float k = (inner > 0.0f && tableNatural > inner) ? inner / tableNatural : 1.0f;
-            const float colScheme = fs * 9.2f * k, colWhat = fs * 11.6f * k, colSuits = fs * 12.8f * k;
-            ImGui::TableSetupColumn("方案", ImGuiTableColumnFlags_WidthFixed, colScheme);
-            ImGui::TableSetupColumn("是干什么的", ImGuiTableColumnFlags_WidthFixed, colWhat);
-            ImGui::TableSetupColumn("适合什么", ImGuiTableColumnFlags_WidthFixed, colSuits);
+        if (ImGui::BeginTable("##scaling_schemes", 3, ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {
+            ImGui::TableSetupColumn("方案", ImGuiTableColumnFlags_WidthStretch, 9.2f);
+            ImGui::TableSetupColumn("是干什么的", ImGuiTableColumnFlags_WidthStretch, 11.6f);
+            ImGui::TableSetupColumn("适合什么", ImGuiTableColumnFlags_WidthStretch, 12.8f);
             ImGui::TableHeadersRow();
-            const float pad2 = ImGui::GetStyle().CellPadding.x * 2.0f;
-            auto cell = [&](float w, const char* text) {   // wrapped within its fixed column, like the warnings in theirs
-                ImGui::PushTextWrapPos(ImGui::GetCursorScreenPos().x + w - pad2);
-                CheatCell(text);
-                ImGui::PopTextWrapPos();
+            auto cell = [](const char* text) {   // wrap at whatever width the stretch column gave the cell
+                const float avail = ImGui::GetContentRegionAvail().x - ImGui::GetStyle().CellPadding.x;
+                if (avail > 0.0f) ImGui::PushTextWrapPos(ImGui::GetCursorScreenPos().x + avail);
+                ImGui::TextUnformatted(text);
+                if (avail > 0.0f) ImGui::PopTextWrapPos();
             };
             for (const ScalingRow& r : kScalingRows) {
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn();
-                cell(colScheme, r.scheme);
+                cell(r.scheme);
                 ImGui::TableNextColumn();
-                cell(colWhat, r.what);
+                cell(r.what);
                 ImGui::TableNextColumn();
-                cell(colSuits, r.suits);
+                ImGui::PushStyleColor(ImGuiCol_Text, (&r == &kScalingRows[0] ? eam::ui::theme::V(eam::ui::theme::kAccent) : ImGui::GetStyleColorVec4(ImGuiCol_Text)));
+                cell(r.suits);
+                ImGui::PopStyleColor();
             }
             ImGui::EndTable();
         }
-        ImGui::EndChild();
 
         ImGui::Dummy(ImVec2(0, S(2)));
         if (ui::Button("知道了", ui::icons::kCheck, ui::ButtonKind::Primary)) ImGui::CloseCurrentPopup();

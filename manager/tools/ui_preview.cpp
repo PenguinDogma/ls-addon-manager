@@ -495,6 +495,13 @@ int main(int argc, char** argv) {
         shot.Save((out + "/preview_logs.bmp").c_str());
     }
 
+    // 4b. The scaling cheat sheet over the Settings tab (EAM_PREVIEW_SHEET=1: HeaderBar() opens it
+    //     itself, see header_bar.cpp — the ? button is not clickable in a preview)
+    if (env("EAM_PREVIEW_SHEET") == "1") {
+        shot.Frame([&] { Shell("Settings", status, [&] {}); }, 14);
+        shot.Save((out + "/preview_sheet.bmp").c_str());
+    }
+
     shot.Shutdown();
     printf("wrote previews to %s\n", out.c_str());
     return 0;
