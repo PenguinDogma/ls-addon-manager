@@ -83,11 +83,9 @@ float HeaderBarHeight() { return S(50.0f); }
 void HeaderBar() {
     // EAM_PREVIEW_SHEET=1 (the offline preview, tools/ui_preview.cpp): open the cheat-sheet once,
     // so a picture can be taken of it — the ? button is not clickable there
-    static bool s_sheetPreviewOpened = false;
-    if (!s_sheetPreviewOpened && getenv("EAM_PREVIEW_SHEET") != nullptr) {
-        s_sheetPreviewOpened = true;
-        ImGui::OpenPopup(kScalingHelpPopup);
-    }
+    static const bool s_sheetPreview = [] { char* v = nullptr; size_t n = 0; _dupenv_s(&v, &n, "EAM_PREVIEW_SHEET"); const bool on = v != nullptr; free(v); return on; }();
+    static bool s_sheetOpened = false;
+    if (s_sheetPreview && !s_sheetOpened) { s_sheetOpened = true; ImGui::OpenPopup(kScalingHelpPopup); }
     ImDrawList* dl = ImGui::GetWindowDrawList();
     const ImVec2 origin = ImGui::GetCursorScreenPos();
     const float width = ImGui::GetContentRegionAvail().x, height = HeaderBarHeight();

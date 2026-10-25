@@ -213,6 +213,8 @@ add_executable(eam_uipreview EXCLUDE_FROM_ALL
     src/gui/tabs/tab_about.cpp
     src/gui/tabs/tab_features.cpp
     src/features/features.cpp
+    src/features/ls_config.cpp
+    src/features/superlog.cpp
     src/features/reshade_passthrough.cpp
     src/features/reshade_windows.cpp
     src/features/reshade_input.cpp
