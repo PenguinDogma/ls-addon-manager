@@ -212,16 +212,22 @@ void HeaderBar() {
         Tip(tip.c_str());
     }
 
-    // the LS scaling cheat-sheet, opened by the ? in the header bar
-    if (ImGui::BeginPopupModal(kScalingHelpPopup, nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings)) {
-        const float fs = ImGui::GetFontSize();
-        const float tableNatural = fs * (9.2f + 11.6f + 12.8f);
-        const float availW = ImGui::GetMainViewport()->WorkSize.x - ImGui::GetStyle().WindowPadding.x * 2.0f - S(24.0f);
-        const float k = (availW > 0.0f && tableNatural > availW) ? availW / tableNatural : 1.0f;
-        const float scrollCap = ImGui::GetMainViewport()->WorkSize.y * 0.65f;   // cap the sheet so title, margins and the button stay visible
-        ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(availW + ImGui::GetStyle().WindowPadding.x * 2.0f + S(24.0f), scrollCap));
-        ImGui::BeginChild("##sheet_scroll", ImVec2(-1.0f, 0.0f), ImGuiChildFlags_AutoResizeY);
-        ImGui::PushTextWrapPos(fs * 30.0f);
+    // the LS scaling cheat-sheet, opened by the ? in the header bar: pinned to the
+    // centre with a fixed size (auto-sizing popups kept wandering off-screen here)
+    const float fs = ImGui::GetFontSize();
+    // fixed size: the table's natural width plus margins, capped at 92% / 85% of the window
+    const float naturalW = fs * 36.0f;
+    const float maxW = ImGui::GetMainViewport()->WorkSize.x * 0.92f;
+    const float w = naturalW < maxW ? naturalW : maxW;
+    const float maxH = ImGui::GetMainViewport()->WorkSize.y * 0.85f;
+    const float estH = ImGui::GetTextLineHeightWithSpacing() * 26.0f;
+    const float h = estH < maxH ? estH : maxH;
+    ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(w, h), ImGuiCond_Appearing);
+    if (ImGui::BeginPopupModal(kScalingHelpPopup, nullptr, ImGuiWindowFlags_NoSavedSettings)) {
+        const float btnRoom = ImGui::GetFrameHeightWithSpacing() + ImGui::GetStyle().ItemSpacing.y;
+        ImGui::BeginChild("##sheet_scroll", ImVec2(-1.0f, -btnRoom));   // fills the window minus the button line; scrolls when needed
+        ImGui::PushTextWrapPos(0.0f);   // wrap at the child's right edge
         WarnLine("插件联动：DLSS 5 / 上采样插件只接管 NIS 的输出——插件开着时选了其他缩放类型，插件不会生效！这是“插件怎么没反应”的头号原因。");
         ImGui::Dummy(ImVec2(0, S(4)));
         WarnLine("像素画 / 2D 游戏别配神经渲染（NR）：平涂画面没有细节可恢复，只会换来闪烁和额外功耗。");
@@ -229,6 +235,9 @@ void HeaderBar() {
         ImGui::Dummy(ImVec2(0, S(6)));
 
         if (ImGui::BeginTable("##scaling_schemes", 3, ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_SizingFixedFit)) {
+            const float inner = ImGui::GetContentRegionAvail().x;   // the width the table actually has
+            const float tableNatural = fs * (9.2f + 11.6f + 12.8f);
+            const float k = (inner > 0.0f && tableNatural > inner) ? inner / tableNatural : 1.0f;
             const float colScheme = fs * 9.2f * k, colWhat = fs * 11.6f * k, colSuits = fs * 12.8f * k;
             ImGui::TableSetupColumn("方案", ImGuiTableColumnFlags_WidthFixed, colScheme);
             ImGui::TableSetupColumn("是干什么的", ImGuiTableColumnFlags_WidthFixed, colWhat);
