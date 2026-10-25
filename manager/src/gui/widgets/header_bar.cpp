@@ -215,8 +215,11 @@ void HeaderBar() {
     // the LS scaling cheat-sheet, opened by the ? in the header bar
     if (ImGui::BeginPopupModal(kScalingHelpPopup, nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings)) {
         const float fs = ImGui::GetFontSize();
+        const float tableNatural = fs * (9.2f + 11.6f + 12.8f);
+        const float availW = ImGui::GetMainViewport()->WorkSize.x - ImGui::GetStyle().WindowPadding.x * 2.0f - S(24.0f);
+        const float k = (availW > 0.0f && tableNatural > availW) ? availW / tableNatural : 1.0f;
         const float scrollCap = ImGui::GetMainViewport()->WorkSize.y * 0.65f;   // cap the sheet so title, margins and the button stay visible
-        ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(100000.0f, scrollCap));
+        ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(availW + ImGui::GetStyle().WindowPadding.x * 2.0f + S(24.0f), scrollCap));
         ImGui::BeginChild("##sheet_scroll", ImVec2(-1.0f, 0.0f), ImGuiChildFlags_AutoResizeY);
         ImGui::PushTextWrapPos(fs * 30.0f);
         WarnLine("插件联动：DLSS 5 / 上采样插件只接管 NIS 的输出——插件开着时选了其他缩放类型，插件不会生效！这是“插件怎么没反应”的头号原因。");
@@ -226,7 +229,7 @@ void HeaderBar() {
         ImGui::Dummy(ImVec2(0, S(6)));
 
         if (ImGui::BeginTable("##scaling_schemes", 3, ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_SizingFixedFit)) {
-            const float colScheme = fs * 9.2f, colWhat = fs * 11.6f, colSuits = fs * 12.8f;
+            const float colScheme = fs * 9.2f * k, colWhat = fs * 11.6f * k, colSuits = fs * 12.8f * k;
             ImGui::TableSetupColumn("方案", ImGuiTableColumnFlags_WidthFixed, colScheme);
             ImGui::TableSetupColumn("是干什么的", ImGuiTableColumnFlags_WidthFixed, colWhat);
             ImGui::TableSetupColumn("适合什么", ImGuiTableColumnFlags_WidthFixed, colSuits);
