@@ -51,7 +51,7 @@ void Logo(ImDrawList* dl, ImVec2 at, float size) {
 constexpr const char* kScalingHelpPopup = "LS 缩放方案速查###ls_scaling_help";
 struct ScalingRow { const char* scheme; const char* what; const char* suits; };
 const ScalingRow kScalingRows[] = {
-    { "NIS",               "NVIDIA 图像缩放：空间上采样 + 锐化",   "3D 游戏压分辨率后放大；插件链路的唯一入口" },
+    { "NIS",               "NVIDIA 图像缩放：空间上采样 + 锐化",   "3D 游戏压分辨率后放大；DLSS 5 的正规链路入口" },
     { "FSR 1",             "同类空间上采样（AMD 版）+ 锐化",      "不开插件时给 3D 游戏放大，与 NIS 按口味二选一" },
     { "Nearest（最邻近）",  "一像素对一像素硬放大，零模糊",        "像素画游戏，且缩放比正好整数倍（1080p 到 2160p）" },
     { "Sharp Bilinear",    "先整数倍最邻近，再双线性补零头",      "像素画但缩放比非整数（1080p 到 1440p）" },
@@ -217,7 +217,7 @@ void HeaderBar() {
     ImGui::SetNextWindowSize(ImVec2(w, h), ImGuiCond_Appearing);
     if (ImGui::BeginPopupModal(kScalingHelpPopup, nullptr, ImGuiWindowFlags_NoSavedSettings)) {
         ImGui::PushTextWrapPos(0.0f);
-        WarnLine("插件联动：DLSS 5 / 上采样插件只接管 NIS 的输出——插件开着时选了其他缩放类型，插件不会生效！这是“插件怎么没反应”的头号原因。");
+        WarnLine("插件联动：DLSS 5 的修正量叠加在最终画面上，任何缩放模式都会生效；非 NIS 模式走的是质量较差的兜底链路。想彻底关闭 DLSS 5，请关插件自己的开关——换缩放模式关不掉它。");
         ImGui::Dummy(ImVec2(0, S(4)));
         WarnLine("像素画 / 2D 游戏别配神经渲染（NR）：平涂画面没有细节可恢复，只会换来闪烁和额外功耗。");
         ImGui::PopTextWrapPos();
